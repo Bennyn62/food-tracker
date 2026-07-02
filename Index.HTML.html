@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מעקב תזונה יומי</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --dark:#1a3c34; --teal:#2f6b5e; --accent:#c77b2b;
+    --lightbg:#eaf3ef; --rowbg:#f7f9f8; --grid:#d7e5e0; --text:#222; --muted:#5b6b66;
+    --breakfast:#2e7d4f; --lunch:#c96a1f; --dinner:#2a5f9e; --extra:#6a5296;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI", Arial, sans-serif;background:#f3f6f4;color:var(--text);padding:24px 16px 60px;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  h1{text-align:center;color:var(--dark);font-size:1.7rem;margin:0 0 4px;}
+  .sub{text-align:center;color:var(--muted);font-size:.95rem;margin-bottom:12px;}
+
+  #connDiag{
+    text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:10px;
+    background:#fafcfa;border:1px solid var(--grid);border-radius:8px;padding:6px 10px;
+  }
+  #connDiag.ok{color:var(--teal);}
+  #connDiag.bad{color:#b04a4a;background:#fdf0f0;}
+
+  #loginGate{max-width:380px;margin:40px auto;background:#fff;border:1px solid var(--grid);border-radius:12px;padding:28px 24px;text-align:center;}
+  #loginGate h2{color:var(--dark);margin-top:0;}
+  #loginGate input{width:100%;padding:12px;font-size:1.1rem;text-align:center;border:1px solid #c9d6d1;border-radius:8px;margin:14px 0;font-family:inherit;letter-spacing:1px;}
+  #loginGate button{width:100%;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;}
+  #loginGate button:hover{background:var(--dark);}
+  #loginMsg{color:#b04a4a;font-size:.85rem;min-height:1.2em;margin-top:8px;}
+  #loginGate .hint{font-size:.78rem;color:var(--muted);margin-top:14px;}
+
+  #appArea{display:none;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+  .topbar .who{font-weight:700;color:var(--dark);}
+  .topbar button{background:none;border:1px solid var(--grid);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;}
+
+  .datebar{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:18px;flex-wrap:wrap;}
+  .datebar input[type=date]{padding:8px 10px;border:1px solid #c9d6d1;border-radius:8px;font-family:inherit;font-size:.95rem;}
+  .datebar button{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:.9rem;}
+  .btn-save{background:var(--teal);color:#fff;}
+  .btn-save:hover{background:var(--dark);}
+  .btn-nav{background:#fff;border:1px solid var(--grid) !important;color:var(--dark);}
+  #saveStatus{font-size:.8rem;color:var(--teal);min-width:120px;}
+
+  .badges{display:flex;background:var(--dark);border-radius:10px;overflow:hidden;margin-bottom:26px;}
+  .badge{flex:1;text-align:center;padding:12px 6px;color:#fff;border-left:1px solid #3d5c54;}
+  .badge:last-child{border-left:none;}
+  .badge .num{font-size:1.15rem;font-weight:700;}
+  .badge .lbl{font-size:.75rem;color:#cfe0da;margin-top:2px;}
+
+  section{background:#fff;border:1px solid var(--grid);border-radius:10px;margin-bottom:18px;overflow:hidden;}
+  section h2{color:#fff;margin:0;padding:10px 16px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;background:var(--teal);}
+  section h2 .meal-total{font-size:.85rem;font-weight:400;color:#dff0ea;}
+
+  table{width:100%;border-collapse:collapse;font-size:.88rem;}
+  thead th{background:var(--lightbg);color:var(--dark);font-weight:700;padding:8px 6px;border-bottom:1px solid var(--grid);text-align:center;}
+  tbody td{padding:6px;border-bottom:1px solid var(--grid);text-align:center;vertical-align:middle;}
+  tbody tr:nth-child(even){background:var(--rowbg);}
+
+  select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid #c9d6d1;border-radius:6px;font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);}
+  input[type=number]{text-align:center;}
+  .val{font-weight:600;color:var(--dark);}
+  .subtotal-row td{background:var(--lightbg);font-weight:700;color:var(--dark);}
+  .row-actions{padding:8px 16px;text-align:left;}
+  button.addrow{background:none;border:1px dashed var(--teal);color:var(--teal);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;}
+  button.addrow:hover{background:var(--lightbg);}
+  button.delrow{background:none;border:none;color:#b04a4a;cursor:pointer;font-size:1rem;line-height:1;}
+
+  .daily-total{background:var(--dark);border-radius:10px;padding:18px 20px;color:#fff;margin-top:10px;}
+  .daily-total h2{margin:0 0 12px;font-size:1.1rem;color:#fff;}
+  .dt-grid{display:flex;gap:14px;flex-wrap:wrap;}
+  .dt-card{flex:1;min-width:140px;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;}
+  .dt-card .num{font-size:1.3rem;font-weight:700;}
+  .dt-card .lbl{font-size:.78rem;color:#cfe0da;margin-bottom:4px;}
+  .dt-card .bar{height:6px;background:rgba(255,255,255,.15);border-radius:4px;margin-top:6px;overflow:hidden;}
+  .dt-card .bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .2s;}
+  .dt-card .delta{font-size:.75rem;color:#cfe0da;margin-top:4px;}
+
+  .note{text-align:center;color:var(--muted);font-size:.8rem;margin-top:20px;}
+  .addfood-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;}
+  .af-field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px;}
+  .af-field input{width:100%;padding:7px 8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;font-size:.88rem;}
+
+  #historyBody tr{cursor:pointer;}
+  #historyBody tr:hover{background:var(--lightbg) !important;}
+
+  .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
+  .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
+  .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
+  .adduser-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;padding:0 16px 16px;}
+  .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
+  .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
+
+  @media (max-width:700px){
+    table{font-size:.72rem;}
+    thead th, tbody td{padding:4px 3px;}
+    select, input[type=number]{font-size:.78rem;padding:4px 2px;}
+    .addfood-grid{grid-template-columns:repeat(2, 1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="connDiag">מתחבר ל-Firebase...</div>
+
+  <div id="loginGate">
+    <h2>מעקב תזונה יומי</h2>
+    <div class="sub" style="margin-bottom:0;">הזן את הקוד האישי שקיבלת כדי להיכנס</div>
+    <input type="text" id="codeInput" placeholder="הקוד שלך" autocomplete="off">
+    <button id="loginBtn">כניסה</button>
+    <div id="loginMsg"></div>
+    <div class="hint">אין לך קוד? פנה למי שניהל אותך לכלי הזה.</div>
+  </div>
+
+  <div id="appArea">
+    <h1>מעקב תזונה יומי</h1>
+    <div class="topbar">
+      <div class="who" id="whoLabel"></div>
+      <button id="logoutBtn">התנתקות</button>
+    </div>
+
+    <div id="adminView" style="display:none;">
+      <section>
+        <h2><span>ניהול משתמשים</span></h2>
+        <div class="adduser-grid">
+          <input type="text" id="newUserName" placeholder="שם המשתמש">
+          <input type="text" id="newUserCode" placeholder="קוד ייחודי (או השאר ריק ליצירה אוטומטית)">
+          <button id="addUserBtn">+ הוסף משתמש</button>
+        </div>
+        <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
+        <div class="admin-users" id="adminUserList"></div>
+      </section>
+      <div id="adminUserPanel"></div>
+    </div>
+
+    <div id="userView" style="display:none;">
+      <div class="datebar">
+        <button class="btn-nav" id="prevDay">◀ יום קודם</button>
+        <input type="date" id="dateInput">
+        <button class="btn-nav" id="nextDay">יום הבא ▶</button>
+        <button class="btn-save" id="saveBtn">💾 שמור יום</button>
+        <span id="saveStatus"></span>
+      </div>
+
+      <div class="badges">
+        <div class="badge"><div class="num">210 גר'</div><div class="lbl">פחמימה (יעד)</div></div>
+        <div class="badge"><div class="num">65 גר'</div><div class="lbl">שומן (יעד)</div></div>
+        <div class="badge"><div class="num">155 גר'</div><div class="lbl">חלבון (יעד)</div></div>
+        <div class="badge"><div class="num">2200</div><div class="lbl">קלוריות (יעד)</div></div>
+      </div>
+
+      <div class="sub" style="font-size:.85rem;color:var(--accent);font-weight:600;">
+        👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.
+      </div>
+
+      <div id="mealsContainer"></div>
+
+      <section id="addFoodSection">
+        <h2><span>הוספת מזון חדש לרשימה (משותף לכולם)</span></h2>
+        <div style="padding:14px 16px;">
+          <div class="addfood-grid">
+            <div class="af-field"><label>שם המזון</label><input type="text" id="af-name"></div>
+            <div class="af-field"><label>קטגוריה</label><input type="text" id="af-cat" value="מותאם אישית"></div>
+            <div class="af-field"><label>קלוריות ל-100 גר'</label><input type="number" id="af-kcal" min="0" step="1"></div>
+            <div class="af-field"><label>חלבון ל-100 גר'</label><input type="number" id="af-p" min="0" step="0.1"></div>
+            <div class="af-field"><label>שומן ל-100 גר'</label><input type="number" id="af-f" min="0" step="0.1"></div>
+            <div class="af-field"><label>פחמימה ל-100 גר'</label><input type="number" id="af-c" min="0" step="0.1"></div>
+          </div>
+          <button class="addrow" id="af-submit" style="margin-top:10px;">+ הוסף מזון לרשימה</button>
+          <div id="af-msg" style="font-size:.82rem;color:var(--teal);margin-top:6px;"></div>
+        </div>
+      </section>
+
+      <section id="refListSection">
+        <h2><span>רשימת מזונות מלאה (ל-100 גר')</span></h2>
+        <div style="padding:12px 16px;"><input type="text" id="refFilter" placeholder="חיפוש מזון..."></div>
+        <table>
+          <thead><tr><th style="width:34%">מזון</th><th style="width:16%">קטגוריה</th><th style="width:12.5%">קלוריות</th><th style="width:12.5%">חלבון</th><th style="width:12.5%">שומן</th><th style="width:12.5%">פחמימה</th></tr></thead>
+          <tbody id="refListBody"></tbody>
+        </table>
+      </section>
+
+      <div class="daily-total">
+        <h2>סה"כ יומי</h2>
+        <div class="dt-grid" id="dailyTotals"></div>
+      </div>
+
+      <section style="margin-top:18px;">
+        <h2><span>היסטוריה — 60 יום אחרונים</span></h2>
+        <table>
+          <thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <div class="note">הנתונים נשמרים ב-Firebase (Firestore) בענן, בפרויקט הפרטי שלך. שיתוף לפי קוד בלבד — אין הרשאות משתמש אמיתיות ברמת השרת, אז אל תשתמש בזה למידע רגיש.</div>
+  </div>
+</div>
+
+<script>
+const ADMIN_CODE = "BENNY-ADMIN-2026";
+const TARGETS = {kcal:2200, p:155, f:65, c:210};
+const HISTORY_DAYS = 60;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCgMTrWOXyJJaUrYReDN5gkB7UDJytEWDM",
+  authDomain: "b2ft-19e16.firebaseapp.com",
+  projectId: "b2ft-19e16",
+  storageBucket: "b2ft-19e16.firebasestorage.app",
+  messagingSenderId: "645988217417",
+  appId: "1:645988217417:web:aa0e5090eec35ee9ad8598",
+  measurementId: "G-3YLE5Y414V"
+};
+
+let db = null;
+let firebaseReady = false;
+
+function initFirebase(){
+  const diag = document.getElementById("connDiag");
+  try{
+    if(typeof firebase === "undefined"){
+      diag.className = "bad";
+      diag.textContent = "⚠️ ספריית Firebase לא נטענה (בדוק חיבור אינטרנט ורענן את הדף).";
+      return;
+    }
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+    diag.className = "ok";
+    diag.textContent = "✓ מחובר ל-Firebase";
+    setTimeout(()=>{ diag.style.display = "none"; }, 2500);
+  }catch(e){
+    diag.className = "bad";
+    diag.textContent = "⚠️ שגיאת חיבור ל-Firebase: " + (e && e.message ? e.message : String(e));
+  }
+}
+
+const BUILTIN_FOODS = [
+  {n:"חזה עוף מבושל ללא עור", kcal:165, p:31, f:3.6, c:0, cat:"חלבון מן החי"},
+  {n:"כרעיים עוף ללא עור מבושל", kcal:177, p:24, f:8, c:0, cat:"חלבון מן החי"},
+  {n:"פרגית מבושלת", kcal:190, p:23, f:10, c:0, cat:"חלבון מן החי"},
+  {n:"הודו טחון מבושל", kcal:176, p:27, f:7, c:0, cat:"חלבון מן החי"},
+  {n:"סלמון אפוי", kcal:208, p:20, f:13, c:0, cat:"חלבון מן החי"},
+  {n:"דג לבן מבושל (בקלה/דניס)", kcal:105, p:23, f:1, c:0, cat:"חלבון מן החי"},
+  {n:"בשר בקר רזה מבושל", kcal:205, p:29, f:9, c:0, cat:"חלבון מן החי"},
+  {n:"בשר בקר טחון 10% מבושל", kcal:217, p:26, f:12, c:0, cat:"חלבון מן החי"},
+  {n:"אנטריקוט בקר צלוי", kcal:250, p:26, f:16, c:0, cat:"חלבון מן החי"},
+  {n:"פילה בקר צלוי", kcal:190, p:29, f:7.5, c:0, cat:"חלבון מן החי"},
+  {n:"כתף בקר לבישול ארוך", kcal:215, p:28, f:11, c:0, cat:"חלבון מן החי"},
+  {n:"שווארמה עוף רזה", kcal:190, p:26, f:8, c:2, cat:"חלבון מן החי"},
+  {n:"ביצה (100 גר' ~ 2 ביצים)", kcal:155, p:13, f:11, c:1.1, cat:"חלבון מן החי"},
+  {n:"אבקת חלבון Isolate ללא טעם", kcal:375, p:85, f:2, c:2, cat:"חלבון מן החי"},
+  {n:"אנג'רה (טף)", kcal:89, p:3, f:0.4, c:18, cat:"מנות אתיופיות"},
+  {n:"דורו ווט (ווט עוף)", kcal:180, p:18, f:10, c:6, cat:"מנות אתיופיות"},
+  {n:"קיי ווט (ווט בקר)", kcal:190, p:17, f:12, c:5, cat:"מנות אתיופיות"},
+  {n:"ווט ביצים", kcal:160, p:11, f:11, c:4, cat:"מנות אתיופיות"},
+  {n:"יוגורט יווני 5%", kcal:97, p:9, f:5, c:4, cat:"מוצרי חלב"},
+  {n:"גבינה לבנה 5%", kcal:96, p:11, f:5, c:3.5, cat:"מוצרי חלב"},
+  {n:"קוטג' 5%", kcal:106, p:11, f:5, c:3.4, cat:"מוצרי חלב"},
+  {n:"חלב 3%", kcal:60, p:3.2, f:3, c:4.8, cat:"מוצרי חלב"},
+  {n:"משקה שקדים ללא סוכר", kcal:15, p:0.6, f:1.2, c:0.3, cat:"מוצרי חלב"},
+  {n:"שיבולת שועל יבשה", kcal:389, p:17, f:7, c:66, cat:"פחמימות ודגנים"},
+  {n:"קינואה מבושלת", kcal:120, p:4.4, f:1.9, c:21, cat:"פחמימות ודגנים"},
+  {n:"בטטה אפויה", kcal:90, p:2, f:0.1, c:21, cat:"פחמימות ודגנים"},
+  {n:"אורז מבושל", kcal:130, p:2.7, f:0.3, c:28, cat:"פחמימות ודגנים"},
+  {n:"עדשים מבושלות", kcal:116, p:9, f:0.4, c:20, cat:"פחמימות ודגנים"},
+  {n:"אבוקדו", kcal:160, p:2, f:15, c:9, cat:"שומנים ואגוזים"},
+  {n:"שקדים", kcal:579, p:21, f:50, c:22, cat:"שומנים ואגוזים"},
+  {n:"אגוזי מלך", kcal:654, p:15, f:65, c:14, cat:"שומנים ואגוזים"},
+  {n:"חמאת בוטנים", kcal:588, p:25, f:50, c:20, cat:"שומנים ואגוזים"},
+  {n:"שמן זית", kcal:884, p:0, f:100, c:0, cat:"שומנים ואגוזים"},
+  {n:"תפוח", kcal:52, p:0.3, f:0.2, c:14, cat:"פירות"},
+  {n:"בננה", kcal:89, p:1.1, f:0.3, c:23, cat:"פירות"},
+  {n:"פירות יער מעורבים", kcal:50, p:0.7, f:0.3, c:12, cat:"פירות"},
+  {n:"סלט ירקות מעורב", kcal:25, p:1.5, f:0.2, c:5, cat:"ירקות"},
+  {n:"עגבניה", kcal:18, p:0.9, f:0.2, c:3.9, cat:"ירקות"},
+  {n:"מלפפון", kcal:15, p:0.7, f:0.1, c:3.6, cat:"ירקות"},
+  {n:"כרוב", kcal:25, p:1.3, f:0.1, c:6, cat:"ירקות"},
+  {n:"ברוקולי מאודה", kcal:35, p:2.4, f:0.4, c:7, cat:"ירקות"},
+  {n:"קקאו טבעי 100%", kcal:228, p:20, f:14, c:58, cat:"אחר וממתיקים"},
+  {n:"חלווה", kcal:493, p:11.1, f:32.7, c:48.2, cat:"אחר וממתיקים"},
+  {n:"שוקולד מריר 85%", kcal:598, p:7.8, f:42.6, c:34.8, cat:"אחר וממתיקים"},
+  {n:"אלולוז (ממתיק)", kcal:0, p:0, f:0, c:0, cat:"אחר וממתיקים"},
+];
+let FOODS = [...BUILTIN_FOODS];
+
+const MEALS = [
+  {id:"breakfast", title:"בוקר", rows:6, color:"var(--breakfast)"},
+  {id:"lunch", title:"צהריים", rows:6, color:"var(--lunch)"},
+  {id:"dinner", title:"ערב", rows:6, color:"var(--dinner)"},
+  {id:"extra", title:"ארוחה נוספת / חטיף", rows:4, color:"var(--extra)"},
+];
+
+let currentUser = null;
+let currentDate = todayStr();
+let currentLog = {};
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+// ---------------- Firestore helpers ----------------
+async function fbGetUsers(){
+  const snap = await db.collection("users").get();
+  return snap.docs.map(d => ({code: d.id, ...d.data()}));
+}
+async function fbAddUser(code, name){
+  await db.collection("users").doc(code).set({name, createdAt: todayStr()});
+}
+async function fbGetUserLog(code){
+  const snap = await db.collection("logs").doc(code).collection("days").get();
+  const log = {};
+  snap.forEach(d => { log[d.id] = d.data(); });
+  return log;
+}
+async function fbSaveDay(code, date, dayData){
+  await db.collection("logs").doc(code).collection("days").doc(date).set(dayData);
+}
+async function fbGetCustomFoods(){
+  const snap = await db.collection("customFoods").get();
+  return snap.docs.map(d => d.data());
+}
+async function fbAddCustomFood(food){
+  await db.collection("customFoods").add(food);
+}
+
+// ---------------- Login ----------------
+document.getElementById("loginBtn").addEventListener("click", doLogin);
+document.getElementById("codeInput").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+
+async function doLogin(){
+  const code = document.getElementById("codeInput").value.trim();
+  const msg = document.getElementById("loginMsg");
+  if(!firebaseReady){ msg.style.color="#b04a4a"; msg.textContent="עדיין מתחבר ל-Firebase, נסה שוב בעוד רגע."; return; }
+  if(!code){ msg.textContent = "הזן קוד."; return; }
+  msg.style.color = "var(--muted)";
+  msg.textContent = "בודק...";
+
+  if(code === ADMIN_CODE){
+    currentUser = {code, name:"מנהל", isAdmin:true};
+    await enterApp();
+    return;
+  }
+  try{
+    const users = await fbGetUsers();
+    const found = users.find(u=>u.code === code);
+    if(!found){
+      msg.style.color = "#b04a4a";
+      msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
+      return;
+    }
+    currentUser = {code:found.code, name:found.name, isAdmin:false};
+    await enterApp();
+  }catch(e){
+    msg.style.color = "#b04a4a";
+    msg.textContent = "שגיאת התחברות: " + (e && e.message ? e.message : String(e));
+  }
+}
+
+document.getElementById("logoutBtn").addEventListener("click", ()=>{
+  currentUser = null;
+  document.getElementById("appArea").style.display = "none";
+  document.getElementById("loginGate").style.display = "block";
+  document.getElementById("codeInput").value = "";
+  document.getElementById("loginMsg").textContent = "";
+});
+
+async function enterApp(){
+  document.getElementById("loginGate").style.display = "none";
+  document.getElementById("appArea").style.display = "block";
+  document.getElementById("whoLabel").textContent = currentUser.isAdmin ? "מנהל" : ("שלום, " + currentUser.name);
+
+  try{
+    const customFoods = await fbGetCustomFoods();
+    FOODS = [...BUILTIN_FOODS, ...customFoods];
+  }catch(e){ /* keep builtin only if this fails */ }
+
+  if(currentUser.isAdmin){
+    document.getElementById("adminView").style.display = "block";
+    document.getElementById("userView").style.display = "none";
+    await renderAdminUserList();
+  }else{
+    document.getElementById("adminView").style.display = "none";
+    document.getElementById("userView").style.display = "block";
+    MEALS.forEach(buildMealSection);
+    renderRefList("");
+    try{
+      currentLog = await fbGetUserLog(currentUser.code);
+    }catch(e){ currentLog = {}; }
+    document.getElementById("dateInput").value = currentDate;
+    loadDate(currentDate);
+  }
+}
+
+// ---------------- Admin ----------------
+document.getElementById("addUserBtn").addEventListener("click", async ()=>{
+  const name = document.getElementById("newUserName").value.trim();
+  let code = document.getElementById("newUserCode").value.trim();
+  const msg = document.getElementById("addUserMsg");
+  if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
+  if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
+  msg.style.color = "var(--muted)";
+  msg.textContent = "שומר...";
+  try{
+    const users = await fbGetUsers();
+    if(users.find(u=>u.code === code)){
+      msg.style.color="#b04a4a"; msg.textContent="הקוד הזה כבר קיים, בחר קוד אחר."; return;
+    }
+    await fbAddUser(code, name);
+    document.getElementById("newUserName").value = "";
+    document.getElementById("newUserCode").value = "";
+    msg.style.color = "var(--teal)";
+    msg.textContent = `נוצר בהצלחה! "${name}" — הקוד שלו: ${code}. שלח לו את הקוד הזה כדי שיוכל להיכנס.`;
+    renderAdminUserList();
+  }catch(e){
+    msg.style.color="#b04a4a";
+    msg.textContent = "שגיאה: " + (e && e.message ? e.message : String(e));
+  }
+});
+
+async function renderAdminUserList(){
+  const list = document.getElementById("adminUserList");
+  list.innerHTML = `<div style="color:var(--muted);font-size:.85rem;">טוען...</div>`;
+  try{
+    const users = await fbGetUsers();
+    if(users.length === 0){
+      list.innerHTML = `<div style="color:var(--muted);font-size:.85rem;">אין עדיין משתמשים רשומים. הוסף משתמש למעלה.</div>`;
+      return;
+    }
+    list.innerHTML = users.map(u=>`<div class="admin-user-chip" data-code="${u.code}">${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span></div>`).join("");
+    list.querySelectorAll(".admin-user-chip").forEach(chip=>{
+      chip.addEventListener("click", ()=>{
+        list.querySelectorAll(".admin-user-chip").forEach(c=>c.classList.remove("active"));
+        chip.classList.add("active");
+        showAdminUserPanel(chip.dataset.code, chip.textContent);
+      });
+    });
+  }catch(e){
+    list.innerHTML = `<div style="color:#b04a4a;font-size:.85rem;">שגיאה בטעינת משתמשים: ${e && e.message ? e.message : e}</div>`;
+  }
+}
+
+async function showAdminUserPanel(code, label){
+  const panel = document.getElementById("adminUserPanel");
+  panel.innerHTML = `<section><h2><span>היסטוריה — ${label}</span></h2><table><thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="5">טוען...</td></tr></tbody></table></section>`;
+  try{
+    const log = await fbGetUserLog(code);
+    const dates = Object.keys(log).sort().reverse().slice(0, HISTORY_DAYS);
+    const body = document.getElementById("adminHistBody");
+    if(dates.length === 0){
+      body.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">אין עדיין נתונים למשתמש זה.</td></tr>`;
+      return;
+    }
+    body.innerHTML = dates.map(d=>{
+      const t = dayTotals(log[d]);
+      return `<tr><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td></tr>`;
+    }).join("");
+  }catch(e){
+    document.getElementById("adminHistBody").innerHTML = `<tr><td colspan="5" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
+  }
+}
+
+function dayTotals(dayData){
+  let kcal=0,p=0,f=0,c=0;
+  if(!dayData) return {kcal,p,f,c};
+  Object.values(dayData).forEach(rows=>{
+    (rows||[]).forEach(r=>{
+      const factor = (r.qty||0)/100;
+      kcal += r.kcal100*factor; p += r.p100*factor; f += r.f100*factor; c += r.c100*factor;
+    });
+  });
+  return {kcal,p,f,c};
+}
+
+// ---------------- User tracker UI ----------------
+function foodOptions(selectedName){
+  let html = `<option value="">— בחר מזון —</option>`;
+  const sorted = [...FOODS].sort((a,b)=>a.n.localeCompare(b.n,'he'));
+  sorted.forEach(f=>{
+    html += `<option value="${f.n}" ${f.n===selectedName?'selected':''}>${f.n}</option>`;
+  });
+  return html;
+}
+
+function buildMealSection(meal){
+  const container = document.getElementById("mealsContainer");
+  const section = document.createElement("section");
+  section.id = "sec-" + meal.id;
+  section.innerHTML = `
+    <h2 style="background:${meal.color}"><span>${meal.title}</span><span class="meal-total" id="total-${meal.id}">0 קק"ל</span></h2>
+    <table>
+      <thead><tr><th style="width:30%">מזון</th><th style="width:12%">כמות (גר')</th><th style="width:12%">קלוריות</th><th style="width:12%">חלבון</th><th style="width:12%">שומן</th><th style="width:12%">פחמימה</th><th style="width:6%"></th></tr></thead>
+      <tbody id="body-${meal.id}"></tbody>
+      <tfoot><tr class="subtotal-row"><td colspan="2">סה"כ ל${meal.title}</td><td id="sum-kcal-${meal.id}">0</td><td id="sum-p-${meal.id}">0</td><td id="sum-f-${meal.id}">0</td><td id="sum-c-${meal.id}">0</td><td></td></tr></tfoot>
+    </table>
+    <div class="row-actions"><button class="addrow" data-meal="${meal.id}">+ הוסף שורה</button></div>
+  `;
+  container.appendChild(section);
+  const body = section.querySelector(`#body-${meal.id}`);
+  for(let i=0;i<meal.rows;i++) body.appendChild(buildRow(meal.id));
+  section.querySelector(".addrow").addEventListener("click", ()=>body.appendChild(buildRow(meal.id)));
+}
+
+function buildRow(mealId, saved){
+  const tr = document.createElement("tr");
+  tr.dataset.meal = mealId;
+  tr.dataset.kcal100 = saved ? saved.kcal100 : 0;
+  tr.dataset.p100 = saved ? saved.p100 : 0;
+  tr.dataset.f100 = saved ? saved.f100 : 0;
+  tr.dataset.c100 = saved ? saved.c100 : 0;
+  tr.innerHTML = `
+    <td><select class="food-select">${foodOptions(saved ? saved.name : "")}</select></td>
+    <td><input type="number" class="qty" min="0" step="1" placeholder="0" value="${saved ? saved.qty : ''}"></td>
+    <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
+    <td><button class="delrow" title="מחק שורה">✕</button></td>
+  `;
+  tr.querySelector(".food-select").addEventListener("change", ()=>{
+    const name = tr.querySelector(".food-select").value;
+    const food = FOODS.find(f=>f.n === name);
+    tr.dataset.kcal100 = food ? food.kcal : 0;
+    tr.dataset.p100 = food ? food.p : 0;
+    tr.dataset.f100 = food ? food.f : 0;
+    tr.dataset.c100 = food ? food.c : 0;
+    recalcRow(tr, mealId);
+  });
+  tr.querySelector(".qty").addEventListener("input", ()=>recalcRow(tr, mealId));
+  tr.querySelector(".delrow").addEventListener("click", ()=>{
+    tr.remove(); recalcMeal(mealId); recalcDaily();
+  });
+  if(saved) recalcRow(tr, mealId);
+  return tr;
+}
+
+function recalcRow(tr, mealId){
+  const qty = parseFloat(tr.querySelector(".qty").value) || 0;
+  const factor = qty/100;
+  const kcal = (parseFloat(tr.dataset.kcal100)||0)*factor;
+  const p = (parseFloat(tr.dataset.p100)||0)*factor;
+  const f = (parseFloat(tr.dataset.f100)||0)*factor;
+  const c = (parseFloat(tr.dataset.c100)||0)*factor;
+  tr.querySelector(".kcal").textContent = kcal.toFixed(0);
+  tr.querySelector(".p").textContent = p.toFixed(1);
+  tr.querySelector(".f").textContent = f.toFixed(1);
+  tr.querySelector(".c").textContent = c.toFixed(1);
+  recalcMeal(mealId);
+  recalcDaily();
+}
+
+function recalcMeal(mealId){
+  const body = document.getElementById(`body-${mealId}`);
+  let kcal=0,p=0,f=0,c=0;
+  body.querySelectorAll("tr").forEach(tr=>{
+    kcal += parseFloat(tr.querySelector(".kcal").textContent)||0;
+    p += parseFloat(tr.querySelector(".p").textContent)||0;
+    f += parseFloat(tr.querySelector(".f").textContent)||0;
+    c += parseFloat(tr.querySelector(".c").textContent)||0;
+  });
+  document.getElementById(`sum-kcal-${mealId}`).textContent = kcal.toFixed(0);
+  document.getElementById(`sum-p-${mealId}`).textContent = p.toFixed(1);
+  document.getElementById(`sum-f-${mealId}`).textContent = f.toFixed(1);
+  document.getElementById(`sum-c-${mealId}`).textContent = c.toFixed(1);
+  document.getElementById(`total-${mealId}`).textContent = kcal.toFixed(0) + ' קק"ל';
+}
+
+function recalcDaily(){
+  let kcal=0,p=0,f=0,c=0;
+  MEALS.forEach(m=>{
+    kcal += parseFloat(document.getElementById(`sum-kcal-${m.id}`).textContent)||0;
+    p += parseFloat(document.getElementById(`sum-p-${m.id}`).textContent)||0;
+    f += parseFloat(document.getElementById(`sum-f-${m.id}`).textContent)||0;
+    c += parseFloat(document.getElementById(`sum-c-${m.id}`).textContent)||0;
+  });
+  const cards = [
+    {val:kcal, target:TARGETS.kcal, label:"קלוריות", unit:"", dec:0},
+    {val:p, target:TARGETS.p, label:"חלבון", unit:" גר'", dec:1},
+    {val:f, target:TARGETS.f, label:"שומן", unit:" גר'", dec:1},
+    {val:c, target:TARGETS.c, label:"פחמימה", unit:" גר'", dec:1},
+  ];
+  document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
+    const pct = Math.min(100, (cd.val/cd.target)*100);
+    const delta = cd.val - cd.target;
+    const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
+    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><div class="delta">${deltaTxt}</div></div>`;
+  }).join("");
+}
+
+function collectMealData(mealId){
+  const body = document.getElementById(`body-${mealId}`);
+  const out = [];
+  body.querySelectorAll("tr").forEach(tr=>{
+    const name = tr.querySelector(".food-select").value;
+    const qty = parseFloat(tr.querySelector(".qty").value) || 0;
+    if(name && qty > 0){
+      out.push({
+        name, qty,
+        kcal100: parseFloat(tr.dataset.kcal100)||0,
+        p100: parseFloat(tr.dataset.p100)||0,
+        f100: parseFloat(tr.dataset.f100)||0,
+        c100: parseFloat(tr.dataset.c100)||0,
+      });
+    }
+  });
+  return out;
+}
+
+function loadDate(dateStr){
+  currentDate = dateStr;
+  const dayData = currentLog[dateStr] || {};
+  MEALS.forEach(meal=>{
+    const body = document.getElementById(`body-${meal.id}`);
+    body.innerHTML = "";
+    const savedRows = dayData[meal.id] || [];
+    savedRows.forEach(saved => body.appendChild(buildRow(meal.id, saved)));
+    for(let i=savedRows.length;i<meal.rows;i++) body.appendChild(buildRow(meal.id));
+    recalcMeal(meal.id);
+  });
+  recalcDaily();
+  document.getElementById("saveStatus").textContent = "";
+  renderHistory();
+}
+
+document.getElementById("dateInput").addEventListener("change", (e)=>loadDate(e.target.value));
+document.getElementById("prevDay").addEventListener("click", ()=>{
+  const d = new Date(currentDate);
+  d.setDate(d.getDate()-1);
+  const s = d.toISOString().slice(0,10);
+  document.getElementById("dateInput").value = s;
+  loadDate(s);
+});
+document.getElementById("nextDay").addEventListener("click", ()=>{
+  const d = new Date(currentDate);
+  d.setDate(d.getDate()+1);
+  const s = d.toISOString().slice(0,10);
+  document.getElementById("dateInput").value = s;
+  loadDate(s);
+});
+
+document.getElementById("saveBtn").addEventListener("click", async ()=>{
+  const status = document.getElementById("saveStatus");
+  status.textContent = "שומר...";
+  status.style.color = "var(--teal)";
+  const dayData = {};
+  MEALS.forEach(meal=>{ dayData[meal.id] = collectMealData(meal.id); });
+  currentLog[currentDate] = dayData;
+  try{
+    await fbSaveDay(currentUser.code, currentDate, dayData);
+    status.textContent = "✓ נשמר בענן";
+    status.style.color = "var(--teal)";
+    renderHistory();
+  }catch(e){
+    status.textContent = "שגיאה בשמירה: " + (e && e.message ? e.message : String(e));
+    status.style.color = "#b04a4a";
+  }
+});
+
+function renderHistory(){
+  const body = document.getElementById("historyBody");
+  const dates = Object.keys(currentLog).sort().reverse().slice(0, HISTORY_DAYS);
+  if(dates.length === 0){
+    body.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">אין עדיין היסטוריה שמורה.</td></tr>`;
+    return;
+  }
+  body.innerHTML = dates.map(d=>{
+    const t = dayTotals(currentLog[d]);
+    return `<tr data-date="${d}"><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td></tr>`;
+  }).join("");
+  body.querySelectorAll("tr[data-date]").forEach(row=>{
+    row.addEventListener("click", ()=>{
+      document.getElementById("dateInput").value = row.dataset.date;
+      loadDate(row.dataset.date);
+    });
+  });
+}
+
+// ---------------- Custom foods ----------------
+document.getElementById("af-submit").addEventListener("click", async ()=>{
+  const name = document.getElementById("af-name").value.trim();
+  const cat = document.getElementById("af-cat").value.trim() || "מותאם אישית";
+  const kcal = parseFloat(document.getElementById("af-kcal").value);
+  const p = parseFloat(document.getElementById("af-p").value) || 0;
+  const f = parseFloat(document.getElementById("af-f").value) || 0;
+  const c = parseFloat(document.getElementById("af-c").value) || 0;
+  const msg = document.getElementById("af-msg");
+  if(!name){ msg.style.color="#b04a4a"; msg.textContent="צריך להזין שם מזון."; return; }
+  if(isNaN(kcal)){ msg.style.color="#b04a4a"; msg.textContent="צריך להזין ערך קלוריות."; return; }
+
+  const newFood = {n:name, kcal, p, f, c, cat};
+  msg.style.color = "var(--muted)";
+  msg.textContent = "שומר...";
+  try{
+    await fbAddCustomFood(newFood);
+    FOODS.push(newFood);
+    document.querySelectorAll(".food-select").forEach(sel=>{
+      const cur = sel.value;
+      sel.innerHTML = foodOptions(cur);
+    });
+    renderRefList(document.getElementById("refFilter").value);
+    msg.style.color = "var(--teal)";
+    msg.textContent = `"${name}" נוסף בהצלחה — זמין לכל המשתמשים.`;
+    ["af-name","af-kcal","af-p","af-f","af-c"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("af-cat").value = "מותאם אישית";
+  }catch(e){
+    msg.style.color="#b04a4a";
+    msg.textContent = "שגיאה בשמירה: " + (e && e.message ? e.message : String(e));
+  }
+});
+
+function renderRefList(filter){
+  const body = document.getElementById("refListBody");
+  const f = (filter||"").trim();
+  body.innerHTML = FOODS.filter(food=>food.n.includes(f)).map(food=>`
+    <tr><td style="text-align:right;">${food.n}</td><td>${food.cat}</td><td>${food.kcal}</td><td>${food.p}</td><td>${food.f}</td><td>${food.c}</td></tr>
+  `).join("");
+}
+document.getElementById("refFilter").addEventListener("input", (e)=>renderRefList(e.target.value));
+
+initFirebase();
+</script>
+</body>
+</html>
