@@ -91,9 +91,15 @@
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-  .adduser-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;padding:0 16px 16px;}
+  .adduser-grid{display:grid;grid-template-columns:1.3fr 1fr .7fr .7fr .6fr auto;gap:8px;padding:0 16px 16px;}
   .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
   .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
+  .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
+  .activity-toggle-row label{display:flex;align-items:center;gap:4px;cursor:pointer;}
+  .activity-toggle-row input[type=number]{padding:6px 8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
+  @media (max-width:700px){
+    .adduser-grid{grid-template-columns:1fr 1fr;}
+  }
 
   @media (max-width:700px){
     table{font-size:.72rem;}
@@ -129,35 +135,26 @@
         <div class="adduser-grid">
           <input type="text" id="newUserName" placeholder="שם המשתמש">
           <input type="text" id="newUserCode" placeholder="קוד ייחודי (או השאר ריק ליצירה אוטומטית)">
+          <input type="number" id="newUserHeight" placeholder="גובה (ס״מ)" min="0" step="1">
+          <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
+          <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
           <button id="addUserBtn">+ הוסף משתמש</button>
+        </div>
+        <div class="activity-toggle-row">
+          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות למשתמש:</span>
+          <label><input type="checkbox" id="newUserActSteps" checked> צעדים</label>
+          <label><input type="checkbox" id="newUserActRunning"> ריצה</label>
+          <label><input type="checkbox" id="newUserActStrength"> אימון כוח</label>
+          <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500" style="width:150px;">
         </div>
         <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
         <div class="admin-users" id="adminUserList"></div>
+        <div style="padding:0 16px 14px;">
+          <button class="addrow" id="exportAllCsvBtn">⬇️ ייצוא CSV לכל המשתמשים</button>
+          <span id="exportAllMsg" style="font-size:.8rem;margin-right:8px;"></span>
+        </div>
       </section>
       <div id="adminUserPanel"></div>
-    </div>
-
-    <div id="userView" style="display:none;">
-      <div class="datebar">
-        <button class="btn-nav" id="prevDay">◀ יום קודם</button>
-        <input type="date" id="dateInput">
-        <button class="btn-nav" id="nextDay">יום הבא ▶</button>
-        <button class="btn-save" id="saveBtn">💾 שמור יום</button>
-        <span id="saveStatus"></span>
-      </div>
-
-      <div class="badges">
-        <div class="badge"><div class="num">210 גר'</div><div class="lbl">פחמימה (יעד)</div></div>
-        <div class="badge"><div class="num">65 גר'</div><div class="lbl">שומן (יעד)</div></div>
-        <div class="badge"><div class="num">155 גר'</div><div class="lbl">חלבון (יעד)</div></div>
-        <div class="badge"><div class="num">2200</div><div class="lbl">קלוריות (יעד)</div></div>
-      </div>
-
-      <div class="sub" style="font-size:.85rem;color:var(--accent);font-weight:600;">
-        👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.
-      </div>
-
-      <div id="mealsContainer"></div>
 
       <section id="addFoodSection">
         <h2><span>הוספת מזון חדש לרשימה (משותף לכולם)</span></h2>
@@ -183,19 +180,32 @@
           <tbody id="refListBody"></tbody>
         </table>
       </section>
+    </div>
+
+    <div id="userView" style="display:none;">
+      <div class="datebar">
+        <button class="btn-nav" id="prevDay">◀ יום קודם</button>
+        <input type="date" id="dateInput">
+        <button class="btn-nav" id="nextDay">יום הבא ▶</button>
+        <button class="btn-save" id="saveBtn">💾 שמור יום</button>
+        <span id="saveStatus"></span>
+      </div>
+
+      <div class="badges" id="targetBadges"></div>
+      <div id="phaseLabel" style="text-align:center;font-size:.85rem;color:var(--teal);font-weight:600;margin-top:-14px;margin-bottom:14px;display:none;"></div>
+
+      <div class="sub" style="font-size:.85rem;color:var(--accent);font-weight:600;">
+        👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.
+      </div>
+
+      <div id="mealsContainer"></div>
+
+      <div id="activitySection"></div>
 
       <div class="daily-total">
         <h2>סה"כ יומי</h2>
         <div class="dt-grid" id="dailyTotals"></div>
       </div>
-
-      <section style="margin-top:18px;">
-        <h2><span>היסטוריה — 60 יום אחרונים</span></h2>
-        <table>
-          <thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead>
-          <tbody id="historyBody"></tbody>
-        </table>
-      </section>
     </div>
 
     <div class="note">הנתונים נשמרים ב-Firebase (Firestore) בענן, בפרויקט הפרטי שלך. שיתוף לפי קוד בלבד — אין הרשאות משתמש אמיתיות ברמת השרת, אז אל תשתמש בזה למידע רגיש.</div>
@@ -203,8 +213,52 @@
 </div>
 
 <script>
-const ADMIN_CODE = "BENNY-ADMIN-2026";
-const TARGETS = {kcal:2200, p:155, f:65, c:210};
+const ADMIN_CODE = "BENNY";
+const TARGETS_DEFAULT = {kcal:2200, p:155, f:65, c:210};
+let currentTargets = {...TARGETS_DEFAULT};
+
+function calcPersonalTargets(userData){
+  const weight = userData && userData.weight;
+  const height = userData && userData.height;
+  const age = userData && userData.age;
+
+  if(!weight) return {...TARGETS_DEFAULT, phase:"default"};
+
+  if(!height){
+    // no height on file — can't compute a real target weight, fall back to current-weight estimate
+    return buildTargetsFromBasis(weight, 30, "ללא נתוני גובה");
+  }
+
+  const tw = calcTargetWeight(height, age);
+  if(!tw) return buildTargetsFromBasis(weight, 30, "ללא נתוני גובה");
+
+  const targetWeight = tw.target;
+  const diff = weight - targetWeight; // positive = still above goal
+  const nearGoalThreshold = Math.max(targetWeight*0.03, 1.5);
+
+  if(diff <= nearGoalThreshold){
+    // at/near goal weight — switch to maintenance
+    const t = buildTargetsFromBasis(targetWeight, 33, "שימור (יעד הושג)");
+    t.targetWeight = targetWeight;
+    t.currentWeight = weight;
+    return t;
+  }else{
+    // still above goal — deficit based on TARGET weight (fixed, doesn't shrink as they lose weight)
+    const t = buildTargetsFromBasis(targetWeight, 28, "גירעון (ירידה במשקל)");
+    t.targetWeight = targetWeight;
+    t.currentWeight = weight;
+    return t;
+  }
+}
+
+function buildTargetsFromBasis(basisWeight, kcalPerKg, phase){
+  const kcal = Math.round(basisWeight * kcalPerKg);
+  const p = Math.round(basisWeight * 2.2 * 10) / 10;
+  const f = Math.round((kcal * 0.27 / 9) * 10) / 10;
+  const remainingKcal = Math.max(kcal - (p*4) - (f*9), 0);
+  const c = Math.round((remainingKcal / 4) * 10) / 10;
+  return {kcal, p, f, c, phase};
+}
 const HISTORY_DAYS = 60;
 
 const firebaseConfig = {
@@ -300,6 +354,17 @@ let currentUser = null;
 let currentDate = todayStr();
 let currentLog = {};
 
+function calcTargetWeight(heightCm, age){
+  if(!heightCm || heightCm <= 0) return null;
+  const h = heightCm/100;
+  let bmiLow, bmiHigh;
+  if(age && age >= 65){ bmiLow = 23; bmiHigh = 27; }
+  else { bmiLow = 18.5; bmiHigh = 24.9; }
+  const low = bmiLow * h * h;
+  const high = bmiHigh * h * h;
+  return {low: Math.round(low*10)/10, high: Math.round(high*10)/10, target: Math.round(low*10)/10};
+}
+
 function todayStr(){
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
@@ -310,8 +375,27 @@ async function fbGetUsers(){
   const snap = await db.collection("users").get();
   return snap.docs.map(d => ({code: d.id, ...d.data()}));
 }
-async function fbAddUser(code, name){
-  await db.collection("users").doc(code).set({name, createdAt: todayStr()});
+async function fbAddUser(code, data){
+  await db.collection("users").doc(code).set({...data, createdAt: todayStr()});
+}
+async function fbUpdateUser(code, data){
+  await db.collection("users").doc(code).update(data);
+}
+async function fbDeleteUser(code){
+  await db.collection("users").doc(code).delete();
+}
+async function fbAddWeightEntry(code, date, weight){
+  await db.collection("users").doc(code).collection("weightLog").doc(date).set({weight, date});
+  await db.collection("users").doc(code).update({weight, lastWeightDate: date});
+}
+async function fbGetWeightLog(code){
+  const snap = await db.collection("users").doc(code).collection("weightLog").get();
+  const entries = snap.docs.map(d => d.data());
+  entries.sort((a,b)=> a.date < b.date ? 1 : -1);
+  return entries;
+}
+async function fbDeleteWeightEntry(code, date){
+  await db.collection("users").doc(code).collection("weightLog").doc(date).delete();
 }
 async function fbGetUserLog(code){
   const snap = await db.collection("logs").doc(code).collection("days").get();
@@ -355,7 +439,7 @@ async function doLogin(){
       msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false};
+    currentUser = {code:found.code, name:found.name, isAdmin:false, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
@@ -384,12 +468,15 @@ async function enterApp(){
   if(currentUser.isAdmin){
     document.getElementById("adminView").style.display = "block";
     document.getElementById("userView").style.display = "none";
+    renderRefList("");
     await renderAdminUserList();
   }else{
     document.getElementById("adminView").style.display = "none";
     document.getElementById("userView").style.display = "block";
+    currentTargets = calcPersonalTargets(currentUser);
+    renderTargetBadges(currentTargets);
     MEALS.forEach(buildMealSection);
-    renderRefList("");
+    buildActivitySection();
     try{
       currentLog = await fbGetUserLog(currentUser.code);
     }catch(e){ currentLog = {}; }
@@ -402,6 +489,13 @@ async function enterApp(){
 document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const name = document.getElementById("newUserName").value.trim();
   let code = document.getElementById("newUserCode").value.trim();
+  const height = parseFloat(document.getElementById("newUserHeight").value) || null;
+  const weight = parseFloat(document.getElementById("newUserWeight").value) || null;
+  const age = parseFloat(document.getElementById("newUserAge").value) || null;
+  const actSteps = document.getElementById("newUserActSteps").checked;
+  const actRunning = document.getElementById("newUserActRunning").checked;
+  const actStrength = document.getElementById("newUserActStrength").checked;
+  const stepsTarget = parseFloat(document.getElementById("newUserStepsTarget").value) || null;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
   if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -412,15 +506,139 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     if(users.find(u=>u.code === code)){
       msg.style.color="#b04a4a"; msg.textContent="הקוד הזה כבר קיים, בחר קוד אחר."; return;
     }
-    await fbAddUser(code, name);
+    await fbAddUser(code, {name, height, weight, age,
+      activities: {steps:actSteps, running:actRunning, strength:actStrength},
+      stepsTarget});
     document.getElementById("newUserName").value = "";
     document.getElementById("newUserCode").value = "";
+    document.getElementById("newUserHeight").value = "";
+    document.getElementById("newUserWeight").value = "";
+    document.getElementById("newUserAge").value = "";
+    document.getElementById("newUserStepsTarget").value = "";
     msg.style.color = "var(--teal)";
     msg.textContent = `נוצר בהצלחה! "${name}" — הקוד שלו: ${code}. שלח לו את הקוד הזה כדי שיוכל להיכנס.`;
     renderAdminUserList();
   }catch(e){
     msg.style.color="#b04a4a";
     msg.textContent = "שגיאה: " + (e && e.message ? e.message : String(e));
+  }
+});
+
+function daysSinceLabel(dateStr){
+  if(!dateStr) return {text:"(אין מדידה)", color:"#b04a4a"};
+  const then = new Date(dateStr);
+  const now = new Date(todayStr());
+  const days = Math.round((now - then) / 86400000);
+  let color = "#2e7d4f";
+  if(days > 14) color = "#b04a4a";
+  else if(days > 7) color = "#c77b2b";
+  return {text: `(לפני ${days} ${days===1?'יום':'ימים'})`, color};
+}
+
+function downloadTextFile(filename, text, mime){
+  const blob = new Blob([text], {type: mime || "text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(val){
+  const s = String(val ?? "");
+  if(s.includes(",") || s.includes('"') || s.includes("\n")){
+    return '"' + s.replace(/"/g,'""') + '"';
+  }
+  return s;
+}
+
+function exportUserLogCSV(name, code, log){
+  const headers = ["תאריך","ארוחה","מזון","כמות(גר')","קלוריות","חלבון","שומן","פחמימה"];
+  const rows = [headers];
+  const mealNames = {breakfast:"בוקר", lunch:"צהריים", dinner:"ערב", extra:"חטיף"};
+  Object.keys(log).sort().forEach(date=>{
+    const dayData = log[date];
+    Object.keys(dayData).forEach(mealId=>{
+      (dayData[mealId]||[]).forEach(item=>{
+        const factor = (item.qty||0)/100;
+        rows.push([
+          date, mealNames[mealId]||mealId, item.name, item.qty,
+          Math.round(item.kcal100*factor), (item.p100*factor).toFixed(1),
+          (item.f100*factor).toFixed(1), (item.c100*factor).toFixed(1)
+        ]);
+      });
+    });
+  });
+  const csvText = rows.map(r=>r.map(csvEscape).join(",")).join("\n");
+  downloadTextFile(`food-log-${name}-${todayStr()}.csv`, "\uFEFF" + csvText);
+}
+
+function buildWeightChartSVG(entries, target){
+  if(!entries || entries.length === 0) return `<div style="color:var(--muted);font-size:.82rem;">אין עדיין נתונים לגרף.</div>`;
+  const asc = [...entries].sort((a,b)=> a.date < b.date ? -1 : 1);
+  const w = 600, h = 140, padL = 34, padR = 10, padT = 10, padB = 22;
+  const values = asc.map(e=>e.weight);
+  let minV = Math.min(...values), maxV = Math.max(...values);
+  if(target && target.target){ minV = Math.min(minV, target.target); maxV = Math.max(maxV, target.target); }
+  if(minV === maxV){ minV -= 1; maxV += 1; }
+  const pad = (maxV-minV)*0.1;
+  minV -= pad; maxV += pad;
+  const xStep = asc.length > 1 ? (w-padL-padR)/(asc.length-1) : 0;
+  const yFor = (v)=> padT + (h-padT-padB) * (1 - (v-minV)/(maxV-minV));
+  const xFor = (i)=> padL + i*xStep;
+  const points = asc.map((e,i)=> `${xFor(i)},${yFor(e.weight)}`).join(" ");
+  let targetLine = "";
+  if(target && target.target){
+    const ty = yFor(target.target);
+    targetLine = `<line x1="${padL}" y1="${ty}" x2="${w-padR}" y2="${ty}" stroke="#c77b2b" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="${w-padR}" y="${ty-4}" font-size="10" fill="#c77b2b" text-anchor="end">יעד ${target.target}</text>`;
+  }
+  const dots = asc.map((e,i)=> `<circle cx="${xFor(i)}" cy="${yFor(e.weight)}" r="3" fill="#2f6b5e"/>`).join("");
+  const firstLabel = `<text x="${padL}" y="${h-4}" font-size="9" fill="#5b6b66">${asc[0].date.slice(5)}</text>`;
+  const lastLabel = asc.length>1 ? `<text x="${w-padR}" y="${h-4}" font-size="9" fill="#5b6b66" text-anchor="end">${asc[asc.length-1].date.slice(5)}</text>` : "";
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;background:#fafcfa;border:1px solid var(--grid);border-radius:8px;">
+    ${targetLine}
+    <polyline points="${points}" fill="none" stroke="#2f6b5e" stroke-width="2"/>
+    ${dots}
+    ${firstLabel}${lastLabel}
+  </svg>`;
+}
+
+document.getElementById("exportAllCsvBtn").addEventListener("click", async ()=>{
+  const msg = document.getElementById("exportAllMsg");
+  msg.style.color = "var(--muted)";
+  msg.textContent = "מייצא...";
+  try{
+    const users = await fbGetUsers();
+    const headers = ["קוד משתמש","שם","תאריך","ארוחה","מזון","כמות(גר')","קלוריות","חלבון","שומן","פחמימה"];
+    const rows = [headers];
+    const mealNames = {breakfast:"בוקר", lunch:"צהריים", dinner:"ערב", extra:"חטיף"};
+    for(const u of users){
+      const log = await fbGetUserLog(u.code);
+      Object.keys(log).sort().forEach(date=>{
+        const dayData = log[date];
+        Object.keys(dayData).forEach(mealId=>{
+          (dayData[mealId]||[]).forEach(item=>{
+            const factor = (item.qty||0)/100;
+            rows.push([
+              u.code, u.name, date, mealNames[mealId]||mealId, item.name, item.qty,
+              Math.round(item.kcal100*factor), (item.p100*factor).toFixed(1),
+              (item.f100*factor).toFixed(1), (item.c100*factor).toFixed(1)
+            ]);
+          });
+        });
+      });
+    }
+    const csvText = rows.map(r=>r.map(csvEscape).join(",")).join("\n");
+    downloadTextFile(`food-log-all-users-${todayStr()}.csv`, "\uFEFF" + csvText);
+    msg.style.color = "var(--teal)";
+    msg.textContent = "✓ יוצא בהצלחה";
+  }catch(e){
+    msg.style.color = "#b04a4a";
+    msg.textContent = "שגיאה: " + (e && e.message ? e.message : e);
   }
 });
 
@@ -433,12 +651,16 @@ async function renderAdminUserList(){
       list.innerHTML = `<div style="color:var(--muted);font-size:.85rem;">אין עדיין משתמשים רשומים. הוסף משתמש למעלה.</div>`;
       return;
     }
-    list.innerHTML = users.map(u=>`<div class="admin-user-chip" data-code="${u.code}">${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span></div>`).join("");
+    list.innerHTML = users.map(u=>{
+      const daysInfo = daysSinceLabel(u.lastWeightDate);
+      return `<div class="admin-user-chip" data-code="${u.code}">${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span> <span style="font-size:.72rem;font-weight:600;color:${daysInfo.color};">${daysInfo.text}</span></div>`;
+    }).join("");
     list.querySelectorAll(".admin-user-chip").forEach(chip=>{
       chip.addEventListener("click", ()=>{
         list.querySelectorAll(".admin-user-chip").forEach(c=>c.classList.remove("active"));
         chip.classList.add("active");
-        showAdminUserPanel(chip.dataset.code, chip.textContent);
+        const u = users.find(x=>x.code === chip.dataset.code);
+        showAdminUserPanel(chip.dataset.code, `${u.name} (${u.code})`, u);
       });
     });
   }catch(e){
@@ -446,23 +668,209 @@ async function renderAdminUserList(){
   }
 }
 
-async function showAdminUserPanel(code, label){
+async function renderWeightLog(code, userData){
+  const body = document.getElementById(`weightLogBody-${code}`);
+  if(!body) return;
+  body.innerHTML = `<tr><td colspan="4">טוען...</td></tr>`;
+  try{
+    const entries = await fbGetWeightLog(code);
+    const tw = calcTargetWeight(userData.height, userData.age);
+    const chartEl = document.getElementById(`weightChart-${code}`);
+    if(chartEl) chartEl.innerHTML = buildWeightChartSVG(entries, tw);
+    if(entries.length === 0){
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">אין עדיין מדידות משקל.</td></tr>`;
+      return;
+    }
+    body.innerHTML = entries.map(en=>{
+      const diff = tw ? (en.weight - tw.target) : null;
+      const diffTxt = diff===null ? "—" : (diff>=0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)) + " ק״ג";
+      return `<tr data-date="${en.date}">
+        <td>${en.date}</td><td>${en.weight}</td><td>${diffTxt}</td>
+        <td><button class="delrow weight-del" data-date="${en.date}" title="מחק מדידה">✕</button></td>
+      </tr>`;
+    }).join("");
+    body.querySelectorAll(".weight-del").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        try{
+          await fbDeleteWeightEntry(code, btn.dataset.date);
+          renderWeightLog(code, userData);
+        }catch(e){ /* ignore */ }
+      });
+    });
+  }catch(e){
+    body.innerHTML = `<tr><td colspan="4" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
+  }
+}
+
+async function showAdminUserPanel(code, label, userData){
   const panel = document.getElementById("adminUserPanel");
-  panel.innerHTML = `<section><h2><span>היסטוריה — ${label}</span></h2><table><thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="5">טוען...</td></tr></tbody></table></section>`;
+  const tw = calcTargetWeight(userData.height, userData.age);
+  const pt = calcPersonalTargets(userData);
+  const statsHtml = `
+    <div style="padding:14px 16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
+      <div id="userStatsView-${code}">
+        <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.88rem;color:var(--text);margin-bottom:8px;">
+          <span><strong>גובה:</strong> ${userData.height ? userData.height + ' ס״מ' : '—'}</span>
+          <span><strong>משקל נוכחי:</strong> ${userData.weight ? userData.weight + ' ק״ג' : '—'}</span>
+          <span><strong>גיל:</strong> ${userData.age || '—'}</span>
+        </div>
+        ${tw ? `<div style="font-size:.88rem;color:var(--teal);font-weight:600;">
+          משקל יעד מומלץ (BMI תקין ${userData.age>=65?'23-27':'18.5-24.9'}): <strong>${tw.target} ק״ג</strong>
+          (טווח תקין: ${tw.low}-${tw.high} ק״ג — היעד נבחר בצד הנמוך של הטווח)
+          ${userData.weight ? `<br>הפרש ממשקל נוכחי: ${(userData.weight - tw.target >= 0 ? '-' : '+')}${Math.abs(Math.round((userData.weight-tw.target)*10)/10)} ק״ג`:''}
+        </div>` : `<div style="font-size:.82rem;color:var(--muted);">אין מספיק נתונים (גובה) לחישוב יעד משקל.</div>`}
+        ${pt.phase && pt.phase !== "default" ? `<div style="font-size:.85rem;color:var(--accent);font-weight:600;margin-top:6px;">
+          מצב תזונתי: ${pt.phase} — יעד יומי: ${pt.kcal} קק"ל, ${pt.p} גר' חלבון, ${pt.f} גר' שומן, ${pt.c} גר' פחמימה
+        </div>` : ''}
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="addrow" id="editUserBtn-${code}">✎ ערוך פרטים</button>
+          <button class="addrow" id="deleteUserBtn-${code}" style="border-color:#b04a4a;color:#b04a4a;">🗑 מחק משתמש</button>
+        </div>
+        <div id="userActionMsg-${code}" style="font-size:.82rem;margin-top:6px;"></div>
+      </div>
+      <div id="userEditForm-${code}" style="display:none;margin-top:10px;">
+        <div class="addfood-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="af-field"><label>שם</label><input type="text" id="editName-${code}" value="${userData.name||''}"></div>
+          <div class="af-field"><label>גובה (ס״מ)</label><input type="number" id="editHeight-${code}" value="${userData.height||''}"></div>
+          <div class="af-field"><label>משקל (ק״ג)</label><input type="number" id="editWeight-${code}" value="${userData.weight||''}" step="0.1"></div>
+          <div class="af-field"><label>גיל</label><input type="number" id="editAge-${code}" value="${userData.age||''}"></div>
+        </div>
+        <div class="activity-toggle-row" style="padding:10px 0;">
+          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
+          <label><input type="checkbox" id="editActSteps-${code}" ${userData.activities && userData.activities.steps ? 'checked':''}> צעדים</label>
+          <label><input type="checkbox" id="editActRunning-${code}" ${userData.activities && userData.activities.running ? 'checked':''}> ריצה</label>
+          <label><input type="checkbox" id="editActStrength-${code}" ${userData.activities && userData.activities.strength ? 'checked':''}> אימון כוח</label>
+          <input type="number" id="editStepsTarget-${code}" placeholder="יעד צעדים יומי" value="${userData.stepsTarget||''}" style="width:150px;">
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button class="addrow" id="saveEditBtn-${code}">💾 שמור שינויים</button>
+          <button class="addrow" id="cancelEditBtn-${code}" style="border-color:var(--muted);color:var(--muted);">ביטול</button>
+        </div>
+      </div>
+    </div>
+  `;
+  panel.innerHTML = `<section>
+    <h2><span>${label}</span></h2>
+    ${statsHtml}
+    <div style="padding:14px 16px;border-bottom:1px solid var(--grid);">
+      <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📈 מעקב משקל</div>
+      <div id="weightChart-${code}" style="margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+        <input type="date" id="weightDate-${code}" style="width:auto;">
+        <input type="number" id="weightValue-${code}" placeholder="משקל (ק״ג)" step="0.1" style="width:120px;">
+        <button class="addrow" id="addWeightBtn-${code}">+ הוסף מדידה</button>
+        <span id="weightMsg-${code}" style="font-size:.8rem;"></span>
+      </div>
+      <table>
+        <thead><tr><th>תאריך</th><th>משקל (ק״ג)</th><th>הפרש מהיעד</th><th></th></tr></thead>
+        <tbody id="weightLogBody-${code}"><tr><td colspan="4">טוען...</td></tr></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:.75rem;color:var(--muted);">🔴 חריגה משמעותית מהיעד &nbsp; 🟡 מתחת ליעד באופן משמעותי</span>
+      <button class="addrow" id="exportCsvBtn-${code}">⬇️ ייצוא CSV (מזון) למשתמש זה</button>
+    </div>
+    <table><thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th><th>🚶 צעדים</th><th>🏃 ק"מ</th><th>🏋️ כוח (דק')</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="8">טוען...</td></tr></tbody></table>
+  </section>`;
+
+  document.getElementById(`editUserBtn-${code}`).addEventListener("click", ()=>{
+    document.getElementById(`userStatsView-${code}`).style.display = "none";
+    document.getElementById(`userEditForm-${code}`).style.display = "block";
+  });
+  document.getElementById(`cancelEditBtn-${code}`).addEventListener("click", ()=>{
+    document.getElementById(`userStatsView-${code}`).style.display = "block";
+    document.getElementById(`userEditForm-${code}`).style.display = "none";
+  });
+  document.getElementById(`saveEditBtn-${code}`).addEventListener("click", async ()=>{
+    const newName = document.getElementById(`editName-${code}`).value.trim();
+    const newHeight = parseFloat(document.getElementById(`editHeight-${code}`).value) || null;
+    const newWeight = parseFloat(document.getElementById(`editWeight-${code}`).value) || null;
+    const newAge = parseFloat(document.getElementById(`editAge-${code}`).value) || null;
+    const newActSteps = document.getElementById(`editActSteps-${code}`).checked;
+    const newActRunning = document.getElementById(`editActRunning-${code}`).checked;
+    const newActStrength = document.getElementById(`editActStrength-${code}`).checked;
+    const newStepsTarget = parseFloat(document.getElementById(`editStepsTarget-${code}`).value) || null;
+    const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
+    try{
+      await fbUpdateUser(code, {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget});
+      renderAdminUserList();
+      showAdminUserPanel(code, newName + ` (${code})`, {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget});
+    }catch(e){
+      document.getElementById(`userActionMsg-${code}`).style.color = "#b04a4a";
+      document.getElementById(`userActionMsg-${code}`).textContent = "שגיאה: " + (e && e.message ? e.message : e);
+    }
+  });
+  document.getElementById(`deleteUserBtn-${code}`).addEventListener("click", async function(){
+    const btn = this;
+    if(btn.dataset.confirm !== "1"){
+      btn.dataset.confirm = "1";
+      btn.textContent = "בטוח? לחץ שוב למחיקה סופית";
+      setTimeout(()=>{ btn.dataset.confirm=""; btn.textContent="🗑 מחק משתמש"; }, 4000);
+      return;
+    }
+    try{
+      await fbDeleteUser(code);
+      panel.innerHTML = "";
+      renderAdminUserList();
+    }catch(e){
+      document.getElementById(`userActionMsg-${code}`).style.color = "#b04a4a";
+      document.getElementById(`userActionMsg-${code}`).textContent = "שגיאה במחיקה: " + (e && e.message ? e.message : e);
+    }
+  });
+
+  document.getElementById(`weightDate-${code}`).value = todayStr();
+  document.getElementById(`addWeightBtn-${code}`).addEventListener("click", async ()=>{
+    const dateVal = document.getElementById(`weightDate-${code}`).value;
+    const weightVal = parseFloat(document.getElementById(`weightValue-${code}`).value);
+    const wmsg = document.getElementById(`weightMsg-${code}`);
+    if(!dateVal || isNaN(weightVal)){
+      wmsg.style.color = "#b04a4a"; wmsg.textContent = "צריך תאריך ומשקל תקינים.";
+      return;
+    }
+    wmsg.style.color = "var(--muted)"; wmsg.textContent = "שומר...";
+    try{
+      await fbAddWeightEntry(code, dateVal, weightVal);
+      document.getElementById(`weightValue-${code}`).value = "";
+      wmsg.style.color = "var(--teal)"; wmsg.textContent = "✓ נשמר";
+      renderWeightLog(code, userData);
+    }catch(e){
+      wmsg.style.color = "#b04a4a"; wmsg.textContent = "שגיאה: " + (e && e.message ? e.message : e);
+    }
+  });
+  document.getElementById(`exportCsvBtn-${code}`).addEventListener("click", async ()=>{
+    try{
+      const log = await fbGetUserLog(code);
+      exportUserLogCSV(userData.name || code, code, log);
+    }catch(e){ /* ignore */ }
+  });
+
+  renderWeightLog(code, userData);
+
   try{
     const log = await fbGetUserLog(code);
     const dates = Object.keys(log).sort().reverse().slice(0, HISTORY_DAYS);
     const body = document.getElementById("adminHistBody");
+    const personalTargets = calcPersonalTargets(userData);
     if(dates.length === 0){
-      body.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">אין עדיין נתונים למשתמש זה.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="8" style="color:var(--muted);">אין עדיין נתונים למשתמש זה.</td></tr>`;
       return;
     }
     body.innerHTML = dates.map(d=>{
       const t = dayTotals(log[d]);
-      return `<tr><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td></tr>`;
+      const overBy = t.kcal - personalTargets.kcal;
+      let rowStyle = "";
+      if(personalTargets.kcal > 0){
+        if(overBy > personalTargets.kcal*0.15) rowStyle = 'style="background:#fdeeea;"';
+        else if(overBy < -personalTargets.kcal*0.3) rowStyle = 'style="background:#fdf6e3;"';
+      }
+      const act = (log[d] && log[d].activities) || {};
+      const stepsTxt = act.steps ? act.steps.count : "—";
+      const runTxt = act.running ? act.running.distance : "—";
+      const strengthTxt = act.strength ? act.strength.duration : "—";
+      return `<tr ${rowStyle}><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td><td>${stepsTxt}</td><td>${runTxt}</td><td>${strengthTxt}</td></tr>`;
     }).join("");
   }catch(e){
-    document.getElementById("adminHistBody").innerHTML = `<tr><td colspan="5" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
+    document.getElementById("adminHistBody").innerHTML = `<tr><td colspan="8" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
   }
 }
 
@@ -486,6 +894,86 @@ function foodOptions(selectedName){
     html += `<option value="${f.n}" ${f.n===selectedName?'selected':''}>${f.n}</option>`;
   });
   return html;
+}
+
+function buildActivitySection(){
+  const container = document.getElementById("activitySection");
+  if(!container) return;
+  const acts = (currentUser && currentUser.activities) || {};
+  if(!acts.steps && !acts.running && !acts.strength){
+    container.innerHTML = "";
+    return;
+  }
+  let rows = "";
+  if(acts.steps){
+    rows += `<tr>
+      <td>🚶 צעדים</td>
+      <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="כמות צעדים"></td>
+      <td><input type="number" id="actStepsDuration" min="0" step="1" placeholder="דקות"></td>
+    </tr>`;
+  }
+  if(acts.running){
+    rows += `<tr>
+      <td>🏃 ריצה</td>
+      <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="ק״מ"></td>
+      <td><input type="number" id="actRunningDuration" min="0" step="1" placeholder="דקות"></td>
+    </tr>`;
+  }
+  if(acts.strength){
+    rows += `<tr>
+      <td>🏋️ אימון כוח</td>
+      <td colspan="2"><input type="number" id="actStrengthDuration" min="0" step="1" placeholder="דקות"></td>
+    </tr>`;
+  }
+  container.innerHTML = `
+    <section>
+      <h2 style="background:var(--accent);"><span>🏋️ אימון</span></h2>
+      <table>
+        <thead><tr><th style="width:25%">פעילות</th><th>כמות / מרחק</th><th>משך (דק')</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>
+  `;
+  const stepsCountEl = document.getElementById("actStepsCount");
+  if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
+}
+
+function loadActivityData(actData){
+  actData = actData || {};
+  const scEl = document.getElementById("actStepsCount");
+  if(scEl){
+    scEl.value = actData.steps ? actData.steps.count : "";
+    document.getElementById("actStepsDuration").value = actData.steps ? actData.steps.duration : "";
+  }
+  const rdEl = document.getElementById("actRunningDistance");
+  if(rdEl){
+    rdEl.value = actData.running ? actData.running.distance : "";
+    document.getElementById("actRunningDuration").value = actData.running ? actData.running.duration : "";
+  }
+  const stEl = document.getElementById("actStrengthDuration");
+  if(stEl){
+    stEl.value = actData.strength ? actData.strength.duration : "";
+  }
+}
+
+function collectActivityData(){
+  const act = {};
+  const acts = (currentUser && currentUser.activities) || {};
+  if(acts.steps){
+    const count = parseFloat((document.getElementById("actStepsCount")||{}).value) || 0;
+    const duration = parseFloat((document.getElementById("actStepsDuration")||{}).value) || 0;
+    if(count>0 || duration>0) act.steps = {count, duration};
+  }
+  if(acts.running){
+    const distance = parseFloat((document.getElementById("actRunningDistance")||{}).value) || 0;
+    const duration = parseFloat((document.getElementById("actRunningDuration")||{}).value) || 0;
+    if(distance>0 || duration>0) act.running = {distance, duration};
+  }
+  if(acts.strength){
+    const duration = parseFloat((document.getElementById("actStrengthDuration")||{}).value) || 0;
+    if(duration>0) act.strength = {duration};
+  }
+  return act;
 }
 
 function buildMealSection(meal){
@@ -568,6 +1056,22 @@ function recalcMeal(mealId){
   document.getElementById(`total-${mealId}`).textContent = kcal.toFixed(0) + ' קק"ל';
 }
 
+function renderTargetBadges(targets){
+  const el = document.getElementById("targetBadges");
+  if(!el) return;
+  el.innerHTML = `
+    <div class="badge"><div class="num">${targets.c} גר'</div><div class="lbl">פחמימה (יעד)</div></div>
+    <div class="badge"><div class="num">${targets.f} גר'</div><div class="lbl">שומן (יעד)</div></div>
+    <div class="badge"><div class="num">${targets.p} גר'</div><div class="lbl">חלבון (יעד)</div></div>
+    <div class="badge"><div class="num">${targets.kcal}</div><div class="lbl">קלוריות (יעד)</div></div>
+  `;
+  const phaseEl = document.getElementById("phaseLabel");
+  if(phaseEl){
+    phaseEl.textContent = targets.phase ? `מצב: ${targets.phase}` : "";
+    phaseEl.style.display = targets.phase ? "block" : "none";
+  }
+}
+
 function recalcDaily(){
   let kcal=0,p=0,f=0,c=0;
   MEALS.forEach(m=>{
@@ -577,11 +1081,16 @@ function recalcDaily(){
     c += parseFloat(document.getElementById(`sum-c-${m.id}`).textContent)||0;
   });
   const cards = [
-    {val:kcal, target:TARGETS.kcal, label:"קלוריות", unit:"", dec:0},
-    {val:p, target:TARGETS.p, label:"חלבון", unit:" גר'", dec:1},
-    {val:f, target:TARGETS.f, label:"שומן", unit:" גר'", dec:1},
-    {val:c, target:TARGETS.c, label:"פחמימה", unit:" גר'", dec:1},
+    {val:kcal, target:currentTargets.kcal, label:"קלוריות", unit:"", dec:0},
+    {val:p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
+    {val:f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
+    {val:c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
   ];
+  if(currentUser && currentUser.activities && currentUser.activities.steps && currentUser.stepsTarget){
+    const stepsInput = document.getElementById("actStepsCount");
+    const stepsVal = stepsInput ? (parseFloat(stepsInput.value)||0) : 0;
+    cards.push({val:stepsVal, target:currentUser.stepsTarget, label:"צעדים", unit:"", dec:0});
+  }
   document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
     const pct = Math.min(100, (cd.val/cd.target)*100);
     const delta = cd.val - cd.target;
@@ -620,6 +1129,7 @@ function loadDate(dateStr){
     for(let i=savedRows.length;i<meal.rows;i++) body.appendChild(buildRow(meal.id));
     recalcMeal(meal.id);
   });
+  loadActivityData(dayData.activities);
   recalcDaily();
   document.getElementById("saveStatus").textContent = "";
   renderHistory();
@@ -647,6 +1157,7 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
   status.style.color = "var(--teal)";
   const dayData = {};
   MEALS.forEach(meal=>{ dayData[meal.id] = collectMealData(meal.id); });
+  dayData.activities = collectActivityData();
   currentLog[currentDate] = dayData;
   try{
     await fbSaveDay(currentUser.code, currentDate, dayData);
@@ -661,6 +1172,7 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
 
 function renderHistory(){
   const body = document.getElementById("historyBody");
+  if(!body) return;
   const dates = Object.keys(currentLog).sort().reverse().slice(0, HISTORY_DAYS);
   if(dates.length === 0){
     body.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">אין עדיין היסטוריה שמורה.</td></tr>`;
