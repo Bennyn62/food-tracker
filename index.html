@@ -85,9 +85,30 @@
   .af-field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px;}
   .af-field input{width:100%;padding:7px 8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;font-size:.88rem;}
 
-  #historyBody tr{cursor:pointer;}
+  .tab-bar{
+    display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;
+  }
+  .tab-btn{
+    flex:0 0 auto;padding:9px 16px;border-radius:20px;border:1.5px solid var(--grid);
+    background:#fff;color:var(--text);font-size:.88rem;cursor:pointer;white-space:nowrap;
+    position:relative;font-family:inherit;
+  }
+  .tab-btn.active{
+    background:var(--tabColor, var(--teal));color:#fff;border-color:var(--tabColor, var(--teal));font-weight:700;
+  }
+  .tab-btn.filled:not(.active)::after{
+    content:"";position:absolute;top:4px;left:6px;width:7px;height:7px;border-radius:50%;background:#2e7d4f;
+  }
+  .tab-btn.filled.active::after{
+    content:"";position:absolute;top:4px;left:6px;width:7px;height:7px;border-radius:50%;background:#fff;
+  }
   #historyBody tr:hover{background:var(--lightbg) !important;}
 
+  .stat-grid{display:flex;gap:24px;flex-wrap:wrap;}
+  .stat-cell{min-width:80px;}
+  .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:2px;}
+  .stat-value{font-size:1.05rem;font-weight:700;color:var(--dark);}
+  .stat-value.accent{color:var(--teal);}
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
@@ -193,6 +214,16 @@
 
       <div class="badges" id="targetBadges"></div>
       <div id="phaseLabel" style="text-align:center;font-size:.85rem;color:var(--teal);font-weight:600;margin-top:-14px;margin-bottom:14px;display:none;"></div>
+
+      <div id="greetingBanner" style="text-align:center;font-size:1rem;font-weight:700;color:var(--dark);margin-bottom:10px;"></div>
+
+      <div class="tab-bar" id="tabBar">
+        <button class="tab-btn" data-tab="breakfast" style="--tabColor:var(--breakfast);">🌅 בוקר</button>
+        <button class="tab-btn" data-tab="lunch" style="--tabColor:var(--lunch);">☀️ צהריים</button>
+        <button class="tab-btn" data-tab="dinner" style="--tabColor:var(--dinner);">🌙 ערב</button>
+        <button class="tab-btn" data-tab="extra" style="--tabColor:var(--extra);">🍪 חטיף</button>
+        <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);">🏋️ אימון</button>
+      </div>
 
       <div class="sub" style="font-size:.85rem;color:var(--accent);font-weight:600;">
         👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.
@@ -362,7 +393,8 @@ function calcTargetWeight(heightCm, age){
   else { bmiLow = 18.5; bmiHigh = 24.9; }
   const low = bmiLow * h * h;
   const high = bmiHigh * h * h;
-  return {low: Math.round(low*10)/10, high: Math.round(high*10)/10, target: Math.round(low*10)/10};
+  const mid = (low + high) / 2;
+  return {low: Math.round(low*10)/10, high: Math.round(high*10)/10, target: Math.round(mid*10)/10};
 }
 
 function todayStr(){
@@ -482,6 +514,7 @@ async function enterApp(){
     }catch(e){ currentLog = {}; }
     document.getElementById("dateInput").value = currentDate;
     loadDate(currentDate);
+    switchTab(pickInitialTab());
   }
 }
 
@@ -707,22 +740,23 @@ async function showAdminUserPanel(code, label, userData){
   const tw = calcTargetWeight(userData.height, userData.age);
   const pt = calcPersonalTargets(userData);
   const statsHtml = `
-    <div style="padding:14px 16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
+    <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
-        <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.88rem;color:var(--text);margin-bottom:8px;">
-          <span><strong>גובה:</strong> ${userData.height ? userData.height + ' ס״מ' : '—'}</span>
-          <span><strong>משקל נוכחי:</strong> ${userData.weight ? userData.weight + ' ק״ג' : '—'}</span>
-          <span><strong>גיל:</strong> ${userData.age || '—'}</span>
+        <div class="stat-grid">
+          <div class="stat-cell"><div class="stat-label">גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">משקל נוכחי</div><div class="stat-value">${userData.weight ? userData.weight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">משקל יעד</div><div class="stat-value accent">${tw ? tw.target + ' ק״ג' : '—'}</div></div>
         </div>
-        ${tw ? `<div style="font-size:.88rem;color:var(--teal);font-weight:600;">
-          משקל יעד מומלץ (BMI תקין ${userData.age>=65?'23-27':'18.5-24.9'}): <strong>${tw.target} ק״ג</strong>
-          (טווח תקין: ${tw.low}-${tw.high} ק״ג — היעד נבחר בצד הנמוך של הטווח)
-          ${userData.weight ? `<br>הפרש ממשקל נוכחי: ${(userData.weight - tw.target >= 0 ? '-' : '+')}${Math.abs(Math.round((userData.weight-tw.target)*10)/10)} ק״ג`:''}
-        </div>` : `<div style="font-size:.82rem;color:var(--muted);">אין מספיק נתונים (גובה) לחישוב יעד משקל.</div>`}
-        ${pt.phase && pt.phase !== "default" ? `<div style="font-size:.85rem;color:var(--accent);font-weight:600;margin-top:6px;">
-          מצב תזונתי: ${pt.phase} — יעד יומי: ${pt.kcal} קק"ל, ${pt.p} גר' חלבון, ${pt.f} גר' שומן, ${pt.c} גר' פחמימה
+        ${pt.targetWeight ? `
+        <div class="stat-grid" style="margin-top:12px;">
+          <div class="stat-cell"><div class="stat-label">מצב</div><div class="stat-value accent">${pt.phase.split(' ')[0]}</div></div>
+          <div class="stat-cell"><div class="stat-label">קלוריות</div><div class="stat-value">${pt.kcal}</div></div>
+          <div class="stat-cell"><div class="stat-label">חלבון</div><div class="stat-value">${pt.p} גר'</div></div>
+          <div class="stat-cell"><div class="stat-label">שומן</div><div class="stat-value">${pt.f} גר'</div></div>
+          <div class="stat-cell"><div class="stat-label">פחמימה</div><div class="stat-value">${pt.c} גר'</div></div>
         </div>` : ''}
-        <div style="margin-top:10px;display:flex;gap:8px;">
+        <div style="margin-top:14px;display:flex;gap:8px;">
           <button class="addrow" id="editUserBtn-${code}">✎ ערוך פרטים</button>
           <button class="addrow" id="deleteUserBtn-${code}" style="border-color:#b04a4a;color:#b04a4a;">🗑 מחק משתמש</button>
         </div>
@@ -896,12 +930,68 @@ function foodOptions(selectedName){
   return html;
 }
 
+const TAB_PANELS = {
+  breakfast: "sec-breakfast",
+  lunch: "sec-lunch",
+  dinner: "sec-dinner",
+  extra: "sec-extra",
+  activity: "activitySection",
+};
+
+const GREETINGS = {
+  breakfast: "🌅 בוקר טוב! זמן ארוחת הבוקר",
+  lunch: "☀️ בתיאבון! זמן ארוחת הצהריים",
+  dinner: "🌙 ערב טוב! זמן ארוחת הערב",
+  extra: "🍪 תיעוד חטיף / ארוחה נוספת",
+  activity: "💪 זמן טוב לתעד אימון",
+};
+
+function pickInitialTab(){
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes()/60;
+  if(h >= 6 && h < 10) return "breakfast";
+  if(h >= 12 && h < 14) return "lunch";
+  if(h >= 14 && h < 17) return "extra";
+  if(h >= 18 && h < 21) return "dinner";
+  return "activity";
+}
+
+function switchTab(tabId){
+  Object.keys(TAB_PANELS).forEach(key=>{
+    const el = document.getElementById(TAB_PANELS[key]);
+    if(el) el.style.display = (key === tabId) ? "block" : "none";
+  });
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.tab === tabId);
+  });
+  const greetEl = document.getElementById("greetingBanner");
+  if(greetEl) greetEl.textContent = GREETINGS[tabId] || "";
+}
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=> switchTab(btn.dataset.tab));
+});
+
+function updateTabIndicators(){
+  const dayData = currentLog[currentDate] || {};
+  MEALS.forEach(meal=>{
+    const has = (dayData[meal.id]||[]).length > 0;
+    const btn = document.querySelector(`.tab-btn[data-tab="${meal.id}"]`);
+    if(btn) btn.classList.toggle("filled", has);
+  });
+  const hasAct = dayData.activities && Object.keys(dayData.activities).length > 0;
+  const actBtn = document.querySelector('.tab-btn[data-tab="activity"]');
+  if(actBtn) actBtn.classList.toggle("filled", hasAct);
+}
+
 function buildActivitySection(){
   const container = document.getElementById("activitySection");
   if(!container) return;
   const acts = (currentUser && currentUser.activities) || {};
   if(!acts.steps && !acts.running && !acts.strength){
-    container.innerHTML = "";
+    container.innerHTML = `<section><h2 style="background:var(--accent);"><span>🏋️ אימון</span></h2>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.9rem;">אין פעילויות מוגדרות עבורך כרגע. פנה למנהל כדי להפעיל מעקב אימונים.</div>
+    </section>`;
     return;
   }
   let rows = "";
@@ -1059,7 +1149,11 @@ function recalcMeal(mealId){
 function renderTargetBadges(targets){
   const el = document.getElementById("targetBadges");
   if(!el) return;
+  const twBadge = targets.targetWeight
+    ? `<div class="badge"><div class="num">${targets.targetWeight} ק"ג</div><div class="lbl">משקל (יעד)</div></div>`
+    : "";
   el.innerHTML = `
+    ${twBadge}
     <div class="badge"><div class="num">${targets.c} גר'</div><div class="lbl">פחמימה (יעד)</div></div>
     <div class="badge"><div class="num">${targets.f} גר'</div><div class="lbl">שומן (יעד)</div></div>
     <div class="badge"><div class="num">${targets.p} גר'</div><div class="lbl">חלבון (יעד)</div></div>
@@ -1067,7 +1161,7 @@ function renderTargetBadges(targets){
   `;
   const phaseEl = document.getElementById("phaseLabel");
   if(phaseEl){
-    phaseEl.textContent = targets.phase ? `מצב: ${targets.phase}` : "";
+    phaseEl.textContent = (targets.phase && targets.phase !== "default" && targets.targetWeight) ? targets.phase.split(' ')[0] : "";
     phaseEl.style.display = targets.phase ? "block" : "none";
   }
 }
@@ -1131,6 +1225,7 @@ function loadDate(dateStr){
   });
   loadActivityData(dayData.activities);
   recalcDaily();
+  updateTabIndicators();
   document.getElementById("saveStatus").textContent = "";
   renderHistory();
 }
@@ -1164,6 +1259,7 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     status.textContent = "✓ נשמר בענן";
     status.style.color = "var(--teal)";
     renderHistory();
+    updateTabIndicators();
   }catch(e){
     status.textContent = "שגיאה בשמירה: " + (e && e.message ? e.message : String(e));
     status.style.color = "#b04a4a";
