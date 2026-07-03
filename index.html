@@ -168,9 +168,11 @@
         <div class="activity-toggle-row">
           <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות למשתמש:</span>
           <label><input type="checkbox" id="newUserActSteps" checked> צעדים</label>
+          <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500" style="width:140px;">
           <label><input type="checkbox" id="newUserActRunning"> ריצה</label>
+          <input type="number" id="newUserRunningTarget" placeholder="יעד ק״מ יומי" min="0" step="0.5" style="width:130px;">
           <label><input type="checkbox" id="newUserActStrength"> אימון כוח</label>
-          <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500" style="width:150px;">
+          <input type="number" id="newUserStrengthTarget" placeholder="יעד אימונים לשבוע" min="0" step="1" style="width:150px;">
         </div>
         <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
         <div class="admin-users" id="adminUserList"></div>
@@ -217,7 +219,6 @@
       </div>
 
       <div class="badges" id="targetBadges"></div>
-      <div id="phaseLabel" style="text-align:center;font-size:.85rem;color:var(--teal);font-weight:600;margin-top:-14px;margin-bottom:14px;display:none;"></div>
 
       <div id="greetingBanner" style="text-align:center;font-size:1rem;font-weight:700;color:var(--dark);margin-bottom:10px;"></div>
 
@@ -492,7 +493,7 @@ async function doLogin(){
       msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget};
+    currentUser = {code:found.code, name:found.name, isAdmin:false, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
@@ -550,6 +551,8 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const actRunning = document.getElementById("newUserActRunning").checked;
   const actStrength = document.getElementById("newUserActStrength").checked;
   const stepsTarget = parseFloat(document.getElementById("newUserStepsTarget").value) || null;
+  const runningTarget = parseFloat(document.getElementById("newUserRunningTarget").value) || null;
+  const strengthWeeklyTarget = parseFloat(document.getElementById("newUserStrengthTarget").value) || null;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
   if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -562,13 +565,15 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     }
     await fbAddUser(code, {name, height, weight, age,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
-      stepsTarget});
+      stepsTarget, runningTarget, strengthWeeklyTarget});
     document.getElementById("newUserName").value = "";
     document.getElementById("newUserCode").value = "";
     document.getElementById("newUserHeight").value = "";
     document.getElementById("newUserWeight").value = "";
     document.getElementById("newUserAge").value = "";
     document.getElementById("newUserStepsTarget").value = "";
+    document.getElementById("newUserRunningTarget").value = "";
+    document.getElementById("newUserStrengthTarget").value = "";
     msg.style.color = "var(--teal)";
     msg.textContent = `נוצר בהצלחה! "${name}" — הקוד שלו: ${code}. שלח לו את הקוד הזה כדי שיוכל להיכנס.`;
     renderAdminUserList();
@@ -765,6 +770,8 @@ async function showAdminUserPanel(code, label, userData){
 
   let log = {};
   try{ log = await fbGetUserLog(code); }catch(e){ /* ignore, treat as empty */ }
+  let weightEntries = [];
+  try{ weightEntries = await fbGetWeightLog(code); }catch(e){ /* ignore */ }
 
   let weightRemainingHtml = "—";
   if(tw && userData.weight){
@@ -785,8 +792,8 @@ async function showAdminUserPanel(code, label, userData){
         </div>
         ${pt.targetWeight ? `
         <div style="margin-top:14px;">
-          <div class="stat-label" style="margin-bottom:6px;">מצב: <span class="accent" style="font-weight:700;">${pt.phase.split(' ')[0]}</span> &nbsp;·&nbsp; עמידה ביעד (% מהיעד היומי, לפי תאריכים קלנדריים)</div>
-          ${periodPercentTable(log, pt)}
+          <div class="stat-label" style="margin-bottom:6px;">עמידה ביעד (%, לפי תאריכים קלנדריים)</div>
+          ${periodPercentTable(log, pt, weightEntries, userData)}
         </div>
         ` : ''}
         <div style="margin-top:14px;display:flex;gap:8px;">
@@ -805,9 +812,11 @@ async function showAdminUserPanel(code, label, userData){
         <div class="activity-toggle-row" style="padding:10px 0;">
           <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
           <label><input type="checkbox" id="editActSteps-${code}" ${userData.activities && userData.activities.steps ? 'checked':''}> צעדים</label>
+          <input type="number" id="editStepsTarget-${code}" placeholder="יעד צעדים יומי" value="${userData.stepsTarget||''}" style="width:140px;">
           <label><input type="checkbox" id="editActRunning-${code}" ${userData.activities && userData.activities.running ? 'checked':''}> ריצה</label>
+          <input type="number" id="editRunningTarget-${code}" placeholder="יעד ק״מ יומי" value="${userData.runningTarget||''}" step="0.5" style="width:130px;">
           <label><input type="checkbox" id="editActStrength-${code}" ${userData.activities && userData.activities.strength ? 'checked':''}> אימון כוח</label>
-          <input type="number" id="editStepsTarget-${code}" placeholder="יעד צעדים יומי" value="${userData.stepsTarget||''}" style="width:150px;">
+          <input type="number" id="editStrengthTarget-${code}" placeholder="יעד אימונים לשבוע" value="${userData.strengthWeeklyTarget||''}" style="width:150px;">
         </div>
         <div style="margin-top:8px;display:flex;gap:8px;">
           <button class="addrow" id="saveEditBtn-${code}">💾 שמור שינויים</button>
@@ -844,7 +853,7 @@ async function showAdminUserPanel(code, label, userData){
   const headRow = document.getElementById("adminHistHead");
   if(acts.steps) headRow.insertAdjacentHTML("beforeend", `<th>🚶 צעדים</th>`);
   if(acts.running) headRow.insertAdjacentHTML("beforeend", `<th>🏃 ק"מ</th>`);
-  if(acts.strength) headRow.insertAdjacentHTML("beforeend", `<th>🏋️ כוח (דק')</th>`);
+  if(acts.strength) headRow.insertAdjacentHTML("beforeend", `<th>🏋️ כוח</th>`);
   const histColspan = 5 + (acts.steps?1:0) + (acts.running?1:0) + (acts.strength?1:0);
 
   document.getElementById(`editUserBtn-${code}`).addEventListener("click", ()=>{
@@ -864,11 +873,14 @@ async function showAdminUserPanel(code, label, userData){
     const newActRunning = document.getElementById(`editActRunning-${code}`).checked;
     const newActStrength = document.getElementById(`editActStrength-${code}`).checked;
     const newStepsTarget = parseFloat(document.getElementById(`editStepsTarget-${code}`).value) || null;
+    const newRunningTarget = parseFloat(document.getElementById(`editRunningTarget-${code}`).value) || null;
+    const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
+    const payload = {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget};
     try{
-      await fbUpdateUser(code, {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget});
+      await fbUpdateUser(code, payload);
       renderAdminUserList();
-      showAdminUserPanel(code, newName + ` (${code})`, {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget});
+      showAdminUserPanel(code, newName + ` (${code})`, payload);
     }catch(e){
       document.getElementById(`userActionMsg-${code}`).style.color = "#b04a4a";
       document.getElementById(`userActionMsg-${code}`).textContent = "שגיאה: " + (e && e.message ? e.message : e);
@@ -937,7 +949,7 @@ async function showAdminUserPanel(code, label, userData){
       let actCells = "";
       if(acts.steps) actCells += `<td>${act.steps ? act.steps.count : "—"}</td>`;
       if(acts.running) actCells += `<td>${act.running ? act.running.distance : "—"}</td>`;
-      if(acts.strength) actCells += `<td>${act.strength ? act.strength.duration : "—"}</td>`;
+      if(acts.strength) actCells += `<td>${(act.strength && act.strength.done) ? "✓" : "—"}</td>`;
       return `<tr ${rowStyle}><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td>${actCells}</tr>`;
     }).join("");
   }catch(e){
@@ -985,29 +997,111 @@ function pctOf(val, target){
   return Math.round((val/target)*100);
 }
 
-function periodPercentTable(log, pt){
+const WEEKLY_WEIGHT_LOSS_TARGET = 0.3; // kg/week
+
+function daysBetween(startStr, endStr){
+  const d1 = new Date(startStr), d2 = new Date(endStr);
+  return Math.round((d2-d1)/86400000) + 1;
+}
+
+function periodDayCount(type){
+  if(type === "today") return 1;
+  if(type === "week") return 7;
+  const r = getCalendarRange(type);
+  return daysBetween(r.start, r.end);
+}
+
+function weightPeriodChange(entries, startDate, endDate){
+  const asc = [...(entries||[])].sort((a,b)=> a.date < b.date ? -1 : 1);
+  const before = asc.filter(e=>e.date < startDate);
+  const within = asc.filter(e=>e.date >= startDate && e.date <= endDate);
+  const baseline = before.length ? before[before.length-1] : (within.length ? within[0] : null);
+  const latest = within.length ? within[within.length-1] : null;
+  if(!baseline || !latest || baseline.date >= latest.date) return null;
+  return Math.round((baseline.weight - latest.weight)*10)/10; // positive = lost weight
+}
+
+function getPrimaryActivity(userData){
+  const acts = userData.activities || {};
+  if(acts.steps) return {type:"steps", label:"צעדים", target:userData.stepsTarget||null};
+  if(acts.running) return {type:"running", label:"ריצה", target:userData.runningTarget||null};
+  if(acts.strength) return {type:"strength", label:"אימון כוח", target:userData.strengthWeeklyTarget||null};
+  return null;
+}
+
+function activityPeriodValue(log, type, startDate, endDate){
+  let sum=0, count=0, sessionCount=0;
+  Object.keys(log).forEach(d=>{
+    if(d >= startDate && d <= endDate){
+      const act = (log[d] && log[d].activities) || {};
+      if(type === "steps" && act.steps){ sum += act.steps.count||0; count++; }
+      if(type === "running" && act.running){ sum += act.running.distance||0; count++; }
+      if(type === "strength" && act.strength && act.strength.done){ sessionCount++; }
+    }
+  });
+  if(type === "strength") return sessionCount;
+  return count>0 ? sum/count : null;
+}
+
+function periodPercentTable(log, pt, weightEntries, userData){
   const periods = [
     {key:"today", label:"יומי"},
     {key:"week", label:"שבועי"},
     {key:"month", label:"חודשי"},
     {key:"year", label:"שנתי"},
   ];
+  const primaryAct = getPrimaryActivity(userData || {});
+  const hasWeightData = weightEntries && weightEntries.length > 0;
+
+  const headCells = ["", "קלוריות", "חלבון", "שומן", "פחמימה"];
+  if(hasWeightData) headCells.push("משקל");
+  if(primaryAct) headCells.push(primaryAct.label);
+
   const rows = periods.map(per=>{
-    let stats;
+    let stats, range;
     if(per.key === "today"){
+      range = {start: todayStr(), end: todayStr()};
       const t = dayTotals(log[todayStr()]);
-      stats = log[todayStr()] ? {kcal:t.kcal, p:t.p, f:t.f, c:t.c, days:1} : null;
+      stats = log[todayStr()] ? {kcal:t.kcal, p:t.p, f:t.f, c:t.c} : null;
     }else{
-      const range = getCalendarRange(per.key);
+      range = getCalendarRange(per.key);
       stats = periodStats(log, range.start, range.end);
     }
+
+    let cells;
     if(!stats){
-      return `<tr><td class="stat-period-label">${per.label}</td><td colspan="4" style="color:var(--muted);font-size:.82rem;">אין נתונים</td></tr>`;
+      cells = `<td colspan="4" style="color:var(--muted);font-size:.82rem;">אין נתונים</td>`;
+    }else{
+      const pk = pctOf(stats.kcal, pt.kcal), pp = pctOf(stats.p, pt.p), pf = pctOf(stats.f, pt.f), pc = pctOf(stats.c, pt.c);
+      cells = `<td>${pk!==null?pk+'%':'—'}</td><td>${pp!==null?pp+'%':'—'}</td><td>${pf!==null?pf+'%':'—'}</td><td>${pc!==null?pc+'%':'—'}</td>`;
     }
-    const pk = pctOf(stats.kcal, pt.kcal), pp = pctOf(stats.p, pt.p), pf = pctOf(stats.f, pt.f), pc = pctOf(stats.c, pt.c);
-    return `<tr><td class="stat-period-label">${per.label}</td><td>${pk!==null?pk+'%':'—'}</td><td>${pp!==null?pp+'%':'—'}</td><td>${pf!==null?pf+'%':'—'}</td><td>${pc!==null?pc+'%':'—'}</td></tr>`;
+
+    if(hasWeightData){
+      const days = periodDayCount(per.key);
+      const expectedLoss = (WEEKLY_WEIGHT_LOSS_TARGET/7) * days;
+      const actualLoss = weightPeriodChange(weightEntries, range.start, range.end);
+      const wPct = (actualLoss !== null && expectedLoss > 0) ? Math.round((actualLoss/expectedLoss)*100) : null;
+      cells += `<td>${wPct!==null ? wPct+'%' : '—'}</td>`;
+    }
+
+    if(primaryAct){
+      const days = periodDayCount(per.key);
+      let actPct = null;
+      if(primaryAct.type === "strength"){
+        const sessions = activityPeriodValue(log, "strength", range.start, range.end);
+        const expected = (primaryAct.target||0) * (days/7);
+        actPct = (primaryAct.target && expected>0) ? Math.round((sessions/expected)*100) : null;
+      }else{
+        const avg = activityPeriodValue(log, primaryAct.type, range.start, range.end);
+        actPct = (avg !== null && primaryAct.target) ? Math.round((avg/primaryAct.target)*100) : null;
+      }
+      cells += `<td>${actPct!==null ? actPct+'%' : '—'}</td>`;
+    }
+
+    return `<tr><td class="stat-period-label">${per.label}</td>${cells}</tr>`;
   }).join("");
-  return `<table class="period-table"><thead><tr><th></th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+  return `<table class="period-table"><thead><tr><th>${headCells.join('</th><th>')}</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function dayTotals(dayData){
@@ -1149,27 +1243,25 @@ function buildActivitySection(){
     rows += `<tr>
       <td>🚶 צעדים</td>
       <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="כמות צעדים"></td>
-      <td><input type="number" id="actStepsDuration" min="0" step="1" placeholder="דקות"></td>
     </tr>`;
   }
   if(acts.running){
     rows += `<tr>
       <td>🏃 ריצה</td>
       <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="ק״מ"></td>
-      <td><input type="number" id="actRunningDuration" min="0" step="1" placeholder="דקות"></td>
     </tr>`;
   }
   if(acts.strength){
     rows += `<tr>
       <td>🏋️ אימון כוח</td>
-      <td colspan="2"><input type="number" id="actStrengthDuration" min="0" step="1" placeholder="דקות"></td>
+      <td><label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.9rem;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> התאמנתי היום</label></td>
     </tr>`;
   }
   container.innerHTML = `
     <section>
       <h2 style="background:var(--accent);"><span>🏋️ אימון</span></h2>
       <table>
-        <thead><tr><th style="width:25%">פעילות</th><th>כמות / מרחק</th><th>משך (דק')</th></tr></thead>
+        <thead><tr><th style="width:35%">פעילות</th><th>כמות / מרחק</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </section>
@@ -1178,26 +1270,18 @@ function buildActivitySection(){
   if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
   const runDistEl = document.getElementById("actRunningDistance");
   if(runDistEl) runDistEl.addEventListener("input", recalcDaily);
-  const strengthEl = document.getElementById("actStrengthDuration");
-  if(strengthEl) strengthEl.addEventListener("input", recalcDaily);
+  const strengthEl = document.getElementById("actStrengthDone");
+  if(strengthEl) strengthEl.addEventListener("change", recalcDaily);
 }
 
 function loadActivityData(actData){
   actData = actData || {};
   const scEl = document.getElementById("actStepsCount");
-  if(scEl){
-    scEl.value = actData.steps ? actData.steps.count : "";
-    document.getElementById("actStepsDuration").value = actData.steps ? actData.steps.duration : "";
-  }
+  if(scEl) scEl.value = actData.steps ? actData.steps.count : "";
   const rdEl = document.getElementById("actRunningDistance");
-  if(rdEl){
-    rdEl.value = actData.running ? actData.running.distance : "";
-    document.getElementById("actRunningDuration").value = actData.running ? actData.running.duration : "";
-  }
-  const stEl = document.getElementById("actStrengthDuration");
-  if(stEl){
-    stEl.value = actData.strength ? actData.strength.duration : "";
-  }
+  if(rdEl) rdEl.value = actData.running ? actData.running.distance : "";
+  const stEl = document.getElementById("actStrengthDone");
+  if(stEl) stEl.checked = !!(actData.strength && actData.strength.done);
 }
 
 function collectActivityData(){
@@ -1205,17 +1289,15 @@ function collectActivityData(){
   const acts = (currentUser && currentUser.activities) || {};
   if(acts.steps){
     const count = parseFloat((document.getElementById("actStepsCount")||{}).value) || 0;
-    const duration = parseFloat((document.getElementById("actStepsDuration")||{}).value) || 0;
-    if(count>0 || duration>0) act.steps = {count, duration};
+    if(count>0) act.steps = {count};
   }
   if(acts.running){
     const distance = parseFloat((document.getElementById("actRunningDistance")||{}).value) || 0;
-    const duration = parseFloat((document.getElementById("actRunningDuration")||{}).value) || 0;
-    if(distance>0 || duration>0) act.running = {distance, duration};
+    if(distance>0) act.running = {distance};
   }
   if(acts.strength){
-    const duration = parseFloat((document.getElementById("actStrengthDuration")||{}).value) || 0;
-    if(duration>0) act.strength = {duration};
+    const done = (document.getElementById("actStrengthDone")||{}).checked || false;
+    if(done) act.strength = {done:true};
   }
   return act;
 }
@@ -1320,11 +1402,6 @@ function renderTargetBadges(targets){
     <div class="badge"><div class="num">${targets.p} גר'</div><div class="lbl">חלבון (יעד)</div></div>
     <div class="badge"><div class="num">${targets.kcal}</div><div class="lbl">קלוריות (יעד)</div></div>
   `;
-  const phaseEl = document.getElementById("phaseLabel");
-  if(phaseEl){
-    phaseEl.textContent = (targets.phase && targets.phase !== "default" && targets.targetWeight) ? targets.phase.split(' ')[0] : "";
-    phaseEl.style.display = targets.phase ? "block" : "none";
-  }
 }
 
 function recalcDaily(){
@@ -1351,15 +1428,18 @@ function recalcDaily(){
     if(acts.running){
       const el = document.getElementById("actRunningDistance");
       const v = el ? (parseFloat(el.value)||0) : 0;
-      cards.push({val:v, target:null, label:"ריצה", unit:" ק\"מ", dec:1});
+      cards.push({val:v, target:currentUser.runningTarget||null, label:"ריצה", unit:" ק\"מ", dec:1});
     }
     if(acts.strength){
-      const el = document.getElementById("actStrengthDuration");
-      const v = el ? (parseFloat(el.value)||0) : 0;
-      cards.push({val:v, target:null, label:"אימון כוח", unit:" דק'", dec:0});
+      const el = document.getElementById("actStrengthDone");
+      const done = el ? el.checked : false;
+      cards.push({text: done ? "✓ בוצע היום" : "לא בוצע היום", label:"אימון כוח"});
     }
   }
   document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
+    if(cd.text !== undefined){
+      return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
+    }
     if(cd.target){
       const pct = Math.min(100, (cd.val/cd.target)*100);
       const delta = cd.val - cd.target;
