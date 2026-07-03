@@ -109,6 +109,10 @@
   .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:2px;}
   .stat-value{font-size:1.05rem;font-weight:700;color:var(--dark);}
   .stat-value.accent{color:var(--teal);}
+  .period-table{width:100%;border-collapse:collapse;margin-top:4px;}
+  .period-table th{font-size:.72rem;color:var(--muted);font-weight:600;padding:4px 6px;text-align:center;}
+  .period-table td{font-size:.92rem;font-weight:700;color:var(--dark);padding:6px;text-align:center;border-top:1px solid var(--grid);}
+  .period-table td.stat-period-label{font-size:.8rem;font-weight:600;color:var(--muted);text-align:right;}
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
@@ -223,6 +227,7 @@
         <button class="tab-btn" data-tab="dinner" style="--tabColor:var(--dinner);">🌙 ערב</button>
         <button class="tab-btn" data-tab="extra" style="--tabColor:var(--extra);">🍪 חטיף</button>
         <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);">🏋️ אימון</button>
+        <button class="tab-btn" data-tab="week" style="--tabColor:var(--dark);">📊 סיכום שבועי</button>
       </div>
 
       <div class="sub" style="font-size:.85rem;color:var(--accent);font-weight:600;">
@@ -232,6 +237,8 @@
       <div id="mealsContainer"></div>
 
       <div id="activitySection"></div>
+
+      <div id="weekSummarySection" style="display:none;"></div>
 
       <div class="daily-total">
         <h2>סה"כ יומי</h2>
@@ -527,6 +534,7 @@ async function enterApp(){
     }catch(e){ currentLog = {}; }
     document.getElementById("dateInput").value = currentDate;
     loadDate(currentDate);
+    renderWeekSummary();
     switchTab(pickInitialTab());
   }
 }
@@ -757,18 +765,6 @@ async function showAdminUserPanel(code, label, userData){
 
   let log = {};
   try{ log = await fbGetUserLog(code); }catch(e){ /* ignore, treat as empty */ }
-  const todayData = log[todayStr()];
-  const todayTotals = dayTotals(todayData);
-  const hasToday = !!todayData;
-
-  function pctOf(val, target){
-    if(!target) return null;
-    return Math.round((val/target)*100);
-  }
-  const pctKcal = pctOf(todayTotals.kcal, pt.kcal);
-  const pctP = pctOf(todayTotals.p, pt.p);
-  const pctF = pctOf(todayTotals.f, pt.f);
-  const pctC = pctOf(todayTotals.c, pt.c);
 
   let weightRemainingHtml = "—";
   if(tw && userData.weight){
@@ -788,14 +784,10 @@ async function showAdminUserPanel(code, label, userData){
           <div class="stat-cell"><div class="stat-label">נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
         </div>
         ${pt.targetWeight ? `
-        <div class="stat-grid" style="margin-top:12px;">
-          <div class="stat-cell"><div class="stat-label">מצב</div><div class="stat-value accent">${pt.phase.split(' ')[0]}</div></div>
-          <div class="stat-cell"><div class="stat-label">קלוריות היום</div><div class="stat-value">${hasToday && pctKcal!==null ? pctKcal+'%' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">חלבון היום</div><div class="stat-value">${hasToday && pctP!==null ? pctP+'%' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">שומן היום</div><div class="stat-value">${hasToday && pctF!==null ? pctF+'%' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">פחמימה היום</div><div class="stat-value">${hasToday && pctC!==null ? pctC+'%' : '—'}</div></div>
+        <div style="margin-top:14px;">
+          <div class="stat-label" style="margin-bottom:6px;">מצב: <span class="accent" style="font-weight:700;">${pt.phase.split(' ')[0]}</span> &nbsp;·&nbsp; עמידה ביעד (% מהיעד היומי, לפי תאריכים קלנדריים)</div>
+          ${periodPercentTable(log, pt)}
         </div>
-        ${!hasToday ? `<div style="font-size:.78rem;color:var(--muted);margin-top:6px;">אין עדיין נתונים להיום</div>` : ''}
         ` : ''}
         <div style="margin-top:14px;display:flex;gap:8px;">
           <button class="addrow" id="editUserBtn-${code}">✎ ערוך פרטים</button>
@@ -953,6 +945,71 @@ async function showAdminUserPanel(code, label, userData){
   }
 }
 
+function fmtDate(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function getCalendarRange(type){
+  const now = new Date();
+  let start, end;
+  if(type === "week"){
+    const day = now.getDay(); // 0=Sunday
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 6);
+  }else if(type === "month"){
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  }else if(type === "year"){
+    start = new Date(now.getFullYear(), 0, 1);
+    end = new Date(now.getFullYear(), 11, 31);
+  }
+  return {start: fmtDate(start), end: fmtDate(end)};
+}
+
+function periodStats(log, startDate, endDate){
+  let sumKcal=0, sumP=0, sumF=0, sumC=0, count=0;
+  Object.keys(log).forEach(d=>{
+    if(d >= startDate && d <= endDate){
+      const t = dayTotals(log[d]);
+      if(t.kcal>0 || t.p>0 || t.f>0 || t.c>0){
+        sumKcal+=t.kcal; sumP+=t.p; sumF+=t.f; sumC+=t.c; count++;
+      }
+    }
+  });
+  if(count === 0) return null;
+  return {kcal:sumKcal/count, p:sumP/count, f:sumF/count, c:sumC/count, days:count};
+}
+
+function pctOf(val, target){
+  if(!target) return null;
+  return Math.round((val/target)*100);
+}
+
+function periodPercentTable(log, pt){
+  const periods = [
+    {key:"today", label:"יומי"},
+    {key:"week", label:"שבועי"},
+    {key:"month", label:"חודשי"},
+    {key:"year", label:"שנתי"},
+  ];
+  const rows = periods.map(per=>{
+    let stats;
+    if(per.key === "today"){
+      const t = dayTotals(log[todayStr()]);
+      stats = log[todayStr()] ? {kcal:t.kcal, p:t.p, f:t.f, c:t.c, days:1} : null;
+    }else{
+      const range = getCalendarRange(per.key);
+      stats = periodStats(log, range.start, range.end);
+    }
+    if(!stats){
+      return `<tr><td class="stat-period-label">${per.label}</td><td colspan="4" style="color:var(--muted);font-size:.82rem;">אין נתונים</td></tr>`;
+    }
+    const pk = pctOf(stats.kcal, pt.kcal), pp = pctOf(stats.p, pt.p), pf = pctOf(stats.f, pt.f), pc = pctOf(stats.c, pt.c);
+    return `<tr><td class="stat-period-label">${per.label}</td><td>${pk!==null?pk+'%':'—'}</td><td>${pp!==null?pp+'%':'—'}</td><td>${pf!==null?pf+'%':'—'}</td><td>${pc!==null?pc+'%':'—'}</td></tr>`;
+  }).join("");
+  return `<table class="period-table"><thead><tr><th></th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 function dayTotals(dayData){
   let kcal=0,p=0,f=0,c=0;
   if(!dayData) return {kcal,p,f,c};
@@ -981,6 +1038,7 @@ const TAB_PANELS = {
   dinner: "sec-dinner",
   extra: "sec-extra",
   activity: "activitySection",
+  week: "weekSummarySection",
 };
 
 const GREETINGS = {
@@ -989,7 +1047,54 @@ const GREETINGS = {
   dinner: "🌙 ערב טוב! זמן ארוחת הערב",
   extra: "🍪 תיעוד חטיף / ארוחה נוספת",
   activity: "💪 זמן טוב לתעד אימון",
+  week: "📊 איך עבר עליך השבוע",
 };
+
+function renderWeekSummary(){
+  const container = document.getElementById("weekSummarySection");
+  if(!container) return;
+  const range = getCalendarRange("week");
+  const stats = periodStats(currentLog, range.start, range.end);
+  const rangeLabel = `${range.start.slice(5)} – ${range.end.slice(5)}`;
+
+  if(!stats){
+    container.innerHTML = `
+      <section>
+        <h2 style="background:var(--dark);"><span>📊 סיכום שבועי</span><span class="meal-total">${rangeLabel}</span></h2>
+        <div style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem;">אין עדיין נתונים לשבוע הנוכחי.</div>
+      </section>`;
+    return;
+  }
+
+  const pk = pctOf(stats.kcal, currentTargets.kcal);
+  const pp = pctOf(stats.p, currentTargets.p);
+  const pf = pctOf(stats.f, currentTargets.f);
+  const pc = pctOf(stats.c, currentTargets.c);
+
+  const rows = [
+    {label:"קלוריות", avg:stats.kcal.toFixed(0), target:currentTargets.kcal, pct:pk, unit:""},
+    {label:"חלבון", avg:stats.p.toFixed(1), target:currentTargets.p, pct:pp, unit:" גר'"},
+    {label:"שומן", avg:stats.f.toFixed(1), target:currentTargets.f, pct:pf, unit:" גר'"},
+    {label:"פחמימה", avg:stats.c.toFixed(1), target:currentTargets.c, pct:pc, unit:" גר'"},
+  ];
+
+  container.innerHTML = `
+    <section>
+      <h2 style="background:var(--dark);"><span>📊 סיכום שבועי</span><span class="meal-total">${rangeLabel} · ${stats.days} ${stats.days===1?'יום':'ימים'} עם נתונים</span></h2>
+      <div style="padding:16px;">
+        <div class="stat-grid">
+          ${rows.map(r=>`
+            <div class="stat-cell">
+              <div class="stat-label">${r.label} (ממוצע יומי)</div>
+              <div class="stat-value">${r.avg}${r.unit}</div>
+              <div style="font-size:.8rem;color:var(--teal);font-weight:700;margin-top:2px;">${r.pct!==null ? r.pct+'%' : '—'} מהיעד</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
 
 function pickInitialTab(){
   const now = new Date();
@@ -1332,6 +1437,7 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     status.style.color = "var(--teal)";
     renderHistory();
     updateTabIndicators();
+    renderWeekSummary();
   }catch(e){
     status.textContent = "שגיאה בשמירה: " + (e && e.message ? e.message : String(e));
     status.style.color = "#b04a4a";
