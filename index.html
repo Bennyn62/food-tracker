@@ -116,7 +116,7 @@
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-  .adduser-grid{display:grid;grid-template-columns:1.3fr 1.2fr .8fr .7fr .7fr .6fr;gap:8px;padding:0 16px 16px;}
+  .adduser-grid{display:grid;grid-template-columns:1.2fr 1.1fr .7fr .6fr .6fr .7fr .5fr;gap:8px;padding:0 16px 16px;}
   .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
   .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
@@ -177,6 +177,11 @@
         <section id="addFoodSection">
           <h2><span>הוספת מזון חדש לרשימה (משותף לכולם)</span></h2>
           <div style="padding:14px 16px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--grid);">
+              <input type="text" id="usda-search-input" placeholder="חיפוש אוטומטי מ-USDA (באנגלית, למשל: chicken breast)" style="flex:1;min-width:220px;">
+              <button class="addrow" id="usda-search-btn">🔍 חפש</button>
+            </div>
+            <div id="usda-search-results" style="margin-bottom:12px;"></div>
             <div class="addfood-grid">
               <div class="af-field"><label>שם המזון</label><input type="text" id="af-name"></div>
               <div class="af-field"><label>קטגוריה</label><input type="text" id="af-cat" value="מותאם אישית"></div>
@@ -212,6 +217,7 @@
             </select>
             <input type="number" id="newUserHeight" placeholder="גובה (ס״מ)" min="0" step="1">
             <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
+            <input type="number" id="newUserWaist" placeholder="היקף מתניים (ס״מ)" min="0" step="0.5">
             <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
           </div>
           <div class="activity-toggle-row">
@@ -475,9 +481,13 @@ async function fbUpdateUser(code, data){
 async function fbDeleteUser(code){
   await db.collection("users").doc(code).delete();
 }
-async function fbAddWeightEntry(code, date, weight){
-  await db.collection("users").doc(code).collection("weightLog").doc(date).set({weight, date});
-  await db.collection("users").doc(code).update({weight, lastWeightDate: date});
+async function fbAddWeightEntry(code, date, weight, waist){
+  const entry = {weight, date};
+  if(waist!=null) entry.waist = waist;
+  await db.collection("users").doc(code).collection("weightLog").doc(date).set(entry);
+  const userUpdate = {weight, lastWeightDate: date};
+  if(waist!=null) userUpdate.waist = waist;
+  await db.collection("users").doc(code).update(userUpdate);
 }
 async function fbGetWeightLog(code){
   const snap = await db.collection("users").doc(code).collection("weightLog").get();
@@ -618,6 +628,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const gender = document.getElementById("newUserGender").value;
   const height = parseFloat(document.getElementById("newUserHeight").value) || null;
   const weight = parseFloat(document.getElementById("newUserWeight").value) || null;
+  const waist = parseFloat(document.getElementById("newUserWaist").value) || null;
   const age = parseFloat(document.getElementById("newUserAge").value) || null;
   const actSteps = document.getElementById("newUserActSteps").checked;
   const actRunning = document.getElementById("newUserActRunning").checked;
@@ -636,7 +647,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     if(users.find(u=>u.code === code)){
       msg.style.color="#b04a4a"; msg.textContent="הקוד הזה כבר קיים, בחר קוד אחר."; return;
     }
-    await fbAddUser(code, {name, gender, height, weight, age,
+    await fbAddUser(code, {name, gender, height, weight, waist, age,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
       stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget});
     document.getElementById("newUserName").value = "";
@@ -804,21 +815,21 @@ async function renderAdminUserList(){
 async function renderWeightLog(code, userData){
   const body = document.getElementById(`weightLogBody-${code}`);
   if(!body) return;
-  body.innerHTML = `<tr><td colspan="4">טוען...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="5">טוען...</td></tr>`;
   try{
     const entries = await fbGetWeightLog(code);
     const tw = calcTargetWeight(userData.height, userData.age, userData.gender);
     const chartEl = document.getElementById(`weightChart-${code}`);
     if(chartEl) chartEl.innerHTML = buildWeightChartSVG(entries, tw);
     if(entries.length === 0){
-      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">אין עדיין מדידות משקל.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">אין עדיין מדידות משקל.</td></tr>`;
       return;
     }
     body.innerHTML = entries.map(en=>{
       const diff = tw ? (en.weight - tw.target) : null;
       const diffTxt = diff===null ? "—" : (diff>=0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)) + " ק״ג";
       return `<tr data-date="${en.date}">
-        <td>${en.date}</td><td>${en.weight}</td><td>${diffTxt}</td>
+        <td>${en.date}</td><td>${en.weight}</td><td>${en.waist!=null ? en.waist : '—'}</td><td>${diffTxt}</td>
         <td><button class="delrow weight-del" data-date="${en.date}" title="מחק מדידה">✕</button></td>
       </tr>`;
     }).join("");
@@ -831,7 +842,7 @@ async function renderWeightLog(code, userData){
       });
     });
   }catch(e){
-    body.innerHTML = `<tr><td colspan="4" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
   }
 }
 
@@ -849,6 +860,35 @@ function getLatestWeight(weightEntries, fallback){
     return asc[asc.length-1].weight;
   }
   return fallback || null;
+}
+
+function getOriginalWaist(weightEntries, fallback){
+  if(weightEntries && weightEntries.length){
+    const asc = [...weightEntries].sort((a,b)=> a.date < b.date ? -1 : 1);
+    const withWaist = asc.find(e => e.waist!=null);
+    if(withWaist) return withWaist.waist;
+  }
+  return fallback || null;
+}
+
+function getLatestWaist(weightEntries, fallback){
+  if(weightEntries && weightEntries.length){
+    const desc = [...weightEntries].sort((a,b)=> a.date < b.date ? 1 : -1);
+    const withWaist = desc.find(e => e.waist!=null);
+    if(withWaist) return withWaist.waist;
+  }
+  return fallback || null;
+}
+
+function calcWHtR(waistCm, heightCm){
+  if(!waistCm || !heightCm) return null;
+  const ratio = Math.round((waistCm / heightCm) * 1000) / 1000;
+  let label, color;
+  if(ratio < 0.4){ label = "יתכן תת-משקל"; color = "#c77b2b"; }
+  else if(ratio < 0.5){ label = "תקין"; color = "#2e7d4f"; }
+  else if(ratio < 0.6){ label = "סיכון מוגבר"; color = "#c77b2b"; }
+  else { label = "סיכון גבוה"; color = "#b04a4a"; }
+  return {ratio, label, color};
 }
 
 function getRegistrationDate(userData, weightEntries){
@@ -942,6 +982,9 @@ async function showAdminUserPanel(code, label, userData){
   const originalWeight = getOriginalWeight(weightEntries, userData.weight);
   const currentWeightVal = getLatestWeight(weightEntries, userData.weight);
   const regDate = getRegistrationDate(userData, weightEntries);
+  const originalWaist = getOriginalWaist(weightEntries, userData.waist);
+  const currentWaistVal = getLatestWaist(weightEntries, userData.waist);
+  const whtr = calcWHtR(currentWaistVal, userData.height);
 
   let weightRemainingHtml = "—";
   if(tw && userData.weight){
@@ -970,6 +1013,7 @@ async function showAdminUserPanel(code, label, userData){
           <div class="stat-cell"><div class="stat-label">${userData.gender==='female' ? '♀ מין' : '♂ מין'}</div><div class="stat-value">${userData.gender==='female' ? 'נקבה' : 'זכר'}</div></div>
           <div class="stat-cell"><div class="stat-label">🎂 גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">⚖️ משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">📐 היקף מתניים מקורי</div><div class="stat-value">${originalWaist!=null ? originalWaist + ' ס״מ' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">🎯 נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
           <div class="stat-cell"><div class="stat-label">⏱ זמן מוערך ליעד</div><div class="stat-value accent">${weeksToGoalHtml}</div></div>
         </div>
@@ -986,11 +1030,12 @@ async function showAdminUserPanel(code, label, userData){
         <div id="userActionMsg-${code}" style="font-size:.82rem;margin-top:6px;"></div>
       </div>
       <div id="userEditForm-${code}" style="display:none;margin-top:10px;">
-        <div class="addfood-grid" style="grid-template-columns:repeat(5,1fr);">
+        <div class="addfood-grid" style="grid-template-columns:repeat(6,1fr);">
           <div class="af-field"><label>שם</label><input type="text" id="editName-${code}" value="${userData.name||''}"></div>
           <div class="af-field"><label>מין</label><select id="editGender-${code}"><option value="male" ${userData.gender!=='female'?'selected':''}>זכר</option><option value="female" ${userData.gender==='female'?'selected':''}>נקבה</option></select></div>
           <div class="af-field"><label>גובה (ס״מ)</label><input type="number" id="editHeight-${code}" value="${userData.height||''}"></div>
           <div class="af-field"><label>משקל (ק״ג)</label><input type="number" id="editWeight-${code}" value="${userData.weight||''}" step="0.1"></div>
+          <div class="af-field"><label>היקף מתניים (ס״מ)</label><input type="number" id="editWaist-${code}" value="${userData.waist||''}" step="0.5"></div>
           <div class="af-field"><label>גיל</label><input type="number" id="editAge-${code}" value="${userData.age||''}"></div>
         </div>
         <div class="activity-toggle-row" style="padding:10px 0;">
@@ -1017,17 +1062,29 @@ async function showAdminUserPanel(code, label, userData){
     <h2><span>${label}</span></h2>
     ${statsHtml}
     <div style="padding:14px 16px;border-bottom:1px solid var(--grid);">
-      <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📈 מעקב משקל</div>
+      <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📐 WTH Ratio — יחס היקף מתניים לגובה</div>
+      ${whtr ? `
+        <div class="stat-grid">
+          <div class="stat-cell"><div class="stat-label">היקף מתניים נוכחי</div><div class="stat-value">${currentWaistVal} ס״מ</div></div>
+          <div class="stat-cell"><div class="stat-label">יחס (WHtR)</div><div class="stat-value">${whtr.ratio}</div></div>
+          <div class="stat-cell"><div class="stat-label">מצב</div><div class="stat-value" style="color:${whtr.color};">${whtr.label}</div></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:8px;">לפי הנחיות NICE: תקין 0.4-0.49 · סיכון מוגבר 0.5-0.59 · סיכון גבוה 0.6+</div>
+      ` : `<div style="color:var(--muted);font-size:.85rem;">אין מספיק נתונים (היקף מתניים וגובה) לחישוב.</div>`}
+    </div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--grid);">
+      <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📈 מעקב משקל והיקף מתניים</div>
       <div id="weightChart-${code}" style="margin-bottom:10px;"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
         <input type="date" id="weightDate-${code}" style="width:auto;">
         <input type="number" id="weightValue-${code}" placeholder="משקל (ק״ג)" step="0.1" style="width:120px;">
+        <input type="number" id="waistValue-${code}" placeholder="היקף מתניים (ס״מ)" step="0.5" style="width:150px;">
         <button class="addrow" id="addWeightBtn-${code}">+ הוסף מדידה</button>
         <span id="weightMsg-${code}" style="font-size:.8rem;"></span>
       </div>
       <table>
-        <thead><tr><th>תאריך</th><th>משקל (ק״ג)</th><th>הפרש מהיעד</th><th></th></tr></thead>
-        <tbody id="weightLogBody-${code}"><tr><td colspan="4">טוען...</td></tr></tbody>
+        <thead><tr><th>תאריך</th><th>משקל (ק״ג)</th><th>היקף מתניים (ס״מ)</th><th>הפרש מהיעד</th><th></th></tr></thead>
+        <tbody id="weightLogBody-${code}"><tr><td colspan="5">טוען...</td></tr></tbody>
       </table>
     </div>
     <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -1057,6 +1114,7 @@ async function showAdminUserPanel(code, label, userData){
     const newGender = document.getElementById(`editGender-${code}`).value;
     const newHeight = parseFloat(document.getElementById(`editHeight-${code}`).value) || null;
     const newWeight = parseFloat(document.getElementById(`editWeight-${code}`).value) || null;
+    const newWaist = parseFloat(document.getElementById(`editWaist-${code}`).value) || null;
     const newAge = parseFloat(document.getElementById(`editAge-${code}`).value) || null;
     const newActSteps = document.getElementById(`editActSteps-${code}`).checked;
     const newActRunning = document.getElementById(`editActRunning-${code}`).checked;
@@ -1066,7 +1124,7 @@ async function showAdminUserPanel(code, label, userData){
     const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
     const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
+    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
@@ -1098,6 +1156,7 @@ async function showAdminUserPanel(code, label, userData){
   document.getElementById(`addWeightBtn-${code}`).addEventListener("click", async ()=>{
     const dateVal = document.getElementById(`weightDate-${code}`).value;
     const weightVal = parseFloat(document.getElementById(`weightValue-${code}`).value);
+    const waistVal = parseFloat(document.getElementById(`waistValue-${code}`).value) || null;
     const wmsg = document.getElementById(`weightMsg-${code}`);
     if(!dateVal || isNaN(weightVal)){
       wmsg.style.color = "#b04a4a"; wmsg.textContent = "צריך תאריך ומשקל תקינים.";
@@ -1105,8 +1164,9 @@ async function showAdminUserPanel(code, label, userData){
     }
     wmsg.style.color = "var(--muted)"; wmsg.textContent = "שומר...";
     try{
-      await fbAddWeightEntry(code, dateVal, weightVal);
+      await fbAddWeightEntry(code, dateVal, weightVal, waistVal);
       document.getElementById(`weightValue-${code}`).value = "";
+      document.getElementById(`waistValue-${code}`).value = "";
       wmsg.style.color = "var(--teal)"; wmsg.textContent = "✓ נשמר";
       renderWeightLog(code, userData);
     }catch(e){
@@ -1873,6 +1933,74 @@ function renderHistory(){
 }
 
 // ---------------- Custom foods ----------------
+const USDA_API_KEY = "DEMO_KEY";
+
+async function searchUSDA(query){
+  const resultsEl = document.getElementById("usda-search-results");
+  resultsEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem;padding:6px 0;">מחפש...</div>`;
+  try{
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=6&api_key=${USDA_API_KEY}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error("שגיאת שרת USDA (" + res.status + ")");
+    const data = await res.json();
+    const foods = data.foods || [];
+    if(foods.length === 0){
+      resultsEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem;padding:6px 0;">לא נמצאו תוצאות. נסה שם באנגלית, למשל "chicken breast".</div>`;
+      return;
+    }
+    resultsEl.innerHTML = foods.map((food, idx)=>{
+      const nutrients = extractUSDANutrients(food);
+      return `<div class="usda-result" data-idx="${idx}" style="padding:8px 10px;border:1px solid var(--grid);border-radius:6px;margin-bottom:6px;cursor:pointer;font-size:.85rem;">
+        <div style="font-weight:600;color:var(--dark);">${food.description}</div>
+        <div style="color:var(--muted);font-size:.78rem;margin-top:2px;">
+          ל-100 גר': ${nutrients.kcal!==null?Math.round(nutrients.kcal):'—'} קלוריות · ${nutrients.p!==null?nutrients.p.toFixed(1):'—'} חלבון · ${nutrients.f!==null?nutrients.f.toFixed(1):'—'} שומן · ${nutrients.c!==null?nutrients.c.toFixed(1):'—'} פחמימה
+        </div>
+      </div>`;
+    }).join("");
+    resultsEl.querySelectorAll(".usda-result").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const idx = parseInt(el.dataset.idx);
+        const food = foods[idx];
+        const nutrients = extractUSDANutrients(food);
+        document.getElementById("af-name").value = food.description;
+        if(nutrients.kcal!==null) document.getElementById("af-kcal").value = Math.round(nutrients.kcal);
+        if(nutrients.p!==null) document.getElementById("af-p").value = nutrients.p.toFixed(1);
+        if(nutrients.f!==null) document.getElementById("af-f").value = nutrients.f.toFixed(1);
+        if(nutrients.c!==null) document.getElementById("af-c").value = nutrients.c.toFixed(1);
+        resultsEl.innerHTML = `<div style="color:var(--teal);font-size:.85rem;padding:6px 0;">✓ נבחר "${food.description}" — בדוק את הערכים למטה ואפשר לערוך לפני השמירה.</div>`;
+      });
+    });
+  }catch(e){
+    resultsEl.innerHTML = `<div style="color:#b04a4a;font-size:.85rem;padding:6px 0;">שגיאה בחיפוש: ${e && e.message ? e.message : e}. ניתן למלא את הערכים ידנית.</div>`;
+  }
+}
+
+function extractUSDANutrients(food){
+  const list = food.foodNutrients || [];
+  function find(names){
+    const hit = list.find(n => names.includes(n.nutrientName));
+    return hit ? hit.value : null;
+  }
+  return {
+    kcal: find(["Energy"]),
+    p: find(["Protein"]),
+    f: find(["Total lipid (fat)"]),
+    c: find(["Carbohydrate, by difference"]),
+  };
+}
+
+document.getElementById("usda-search-btn").addEventListener("click", ()=>{
+  const q = document.getElementById("usda-search-input").value.trim();
+  if(!q) return;
+  searchUSDA(q);
+});
+document.getElementById("usda-search-input").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){
+    e.preventDefault();
+    document.getElementById("usda-search-btn").click();
+  }
+});
+
 document.getElementById("af-submit").addEventListener("click", async ()=>{
   const name = document.getElementById("af-name").value.trim();
   const cat = document.getElementById("af-cat").value.trim() || "מותאם אישית";
