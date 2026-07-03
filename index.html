@@ -750,8 +750,34 @@ async function renderWeightLog(code, userData){
 
 async function showAdminUserPanel(code, label, userData){
   const panel = document.getElementById("adminUserPanel");
+  panel.innerHTML = `<section><h2><span>${label}</span></h2><div style="padding:20px;color:var(--muted);">טוען...</div></section>`;
+
   const tw = calcTargetWeight(userData.height, userData.age);
   const pt = calcPersonalTargets(userData);
+
+  let log = {};
+  try{ log = await fbGetUserLog(code); }catch(e){ /* ignore, treat as empty */ }
+  const todayData = log[todayStr()];
+  const todayTotals = dayTotals(todayData);
+  const hasToday = !!todayData;
+
+  function pctOf(val, target){
+    if(!target) return null;
+    return Math.round((val/target)*100);
+  }
+  const pctKcal = pctOf(todayTotals.kcal, pt.kcal);
+  const pctP = pctOf(todayTotals.p, pt.p);
+  const pctF = pctOf(todayTotals.f, pt.f);
+  const pctC = pctOf(todayTotals.c, pt.c);
+
+  let weightRemainingHtml = "—";
+  if(tw && userData.weight){
+    const diff = Math.round((userData.weight - tw.target)*10)/10;
+    if(Math.abs(diff) < 0.3) weightRemainingHtml = `🎉 היעד הושג`;
+    else if(diff > 0) weightRemainingHtml = `${diff} ק״ג להורדה`;
+    else weightRemainingHtml = `${Math.abs(diff)} ק״ג להעלאה`;
+  }
+
   const statsHtml = `
     <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
@@ -759,16 +785,18 @@ async function showAdminUserPanel(code, label, userData){
           <div class="stat-cell"><div class="stat-label">גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">משקל נוכחי</div><div class="stat-value">${userData.weight ? userData.weight + ' ק״ג' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">משקל יעד</div><div class="stat-value accent">${tw ? tw.target + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
         </div>
         ${pt.targetWeight ? `
         <div class="stat-grid" style="margin-top:12px;">
           <div class="stat-cell"><div class="stat-label">מצב</div><div class="stat-value accent">${pt.phase.split(' ')[0]}</div></div>
-          <div class="stat-cell"><div class="stat-label">קלוריות</div><div class="stat-value">${pt.kcal}</div></div>
-          <div class="stat-cell"><div class="stat-label">חלבון</div><div class="stat-value">${pt.p} גר'</div></div>
-          <div class="stat-cell"><div class="stat-label">שומן</div><div class="stat-value">${pt.f} גר'</div></div>
-          <div class="stat-cell"><div class="stat-label">פחמימה</div><div class="stat-value">${pt.c} גר'</div></div>
-        </div>` : ''}
+          <div class="stat-cell"><div class="stat-label">קלוריות היום</div><div class="stat-value">${hasToday && pctKcal!==null ? pctKcal+'%' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">חלבון היום</div><div class="stat-value">${hasToday && pctP!==null ? pctP+'%' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">שומן היום</div><div class="stat-value">${hasToday && pctF!==null ? pctF+'%' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">פחמימה היום</div><div class="stat-value">${hasToday && pctC!==null ? pctC+'%' : '—'}</div></div>
+        </div>
+        ${!hasToday ? `<div style="font-size:.78rem;color:var(--muted);margin-top:6px;">אין עדיין נתונים להיום</div>` : ''}
+        ` : ''}
         <div style="margin-top:14px;display:flex;gap:8px;">
           <button class="addrow" id="editUserBtn-${code}">✎ ערוך פרטים</button>
           <button class="addrow" id="deleteUserBtn-${code}" style="border-color:#b04a4a;color:#b04a4a;">🗑 מחק משתמש</button>
@@ -891,17 +919,13 @@ async function showAdminUserPanel(code, label, userData){
       wmsg.style.color = "#b04a4a"; wmsg.textContent = "שגיאה: " + (e && e.message ? e.message : e);
     }
   });
-  document.getElementById(`exportCsvBtn-${code}`).addEventListener("click", async ()=>{
-    try{
-      const log = await fbGetUserLog(code);
-      exportUserLogCSV(userData.name || code, code, log);
-    }catch(e){ /* ignore */ }
+  document.getElementById(`exportCsvBtn-${code}`).addEventListener("click", ()=>{
+    exportUserLogCSV(userData.name || code, code, log);
   });
 
   renderWeightLog(code, userData);
 
   try{
-    const log = await fbGetUserLog(code);
     const dates = Object.keys(log).sort().reverse().slice(0, HISTORY_DAYS);
     const body = document.getElementById("adminHistBody");
     const personalTargets = calcPersonalTargets(userData);
@@ -1174,9 +1198,16 @@ function recalcMeal(mealId){
 function renderTargetBadges(targets){
   const el = document.getElementById("targetBadges");
   if(!el) return;
-  const twBadge = targets.targetWeight
-    ? `<div class="badge"><div class="num">${targets.currentWeight ? targets.currentWeight + ' → ' : ''}${targets.targetWeight} ק"ג</div><div class="lbl">משקל (נוכחי ← יעד)</div></div>`
-    : "";
+  let twBadge = "";
+  if(targets.targetWeight && targets.currentWeight){
+    const diff = Math.round((targets.currentWeight - targets.targetWeight)*10)/10;
+    let valText;
+    if(Math.abs(diff) < 0.3) valText = "🎉 הושג";
+    else if(diff > 0) valText = `${diff} ק"ג`;
+    else valText = `${Math.abs(diff)} ק"ג`;
+    const lblText = Math.abs(diff) < 0.3 ? "יעד משקל" : (diff > 0 ? "נותר להורדה" : "נותר להעלאה");
+    twBadge = `<div class="badge"><div class="num">${valText}</div><div class="lbl">${lblText}</div></div>`;
+  }
   el.innerHTML = `
     ${twBadge}
     <div class="badge"><div class="num">${targets.c} גר'</div><div class="lbl">פחמימה (יעד)</div></div>
