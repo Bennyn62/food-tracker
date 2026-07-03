@@ -89,15 +89,15 @@
     display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;
   }
   .tab-btn{
-    flex:0 0 auto;padding:9px 16px;border-radius:20px;border:1.5px solid var(--grid);
-    background:#fff;color:var(--text);font-size:.88rem;cursor:pointer;white-space:nowrap;
-    position:relative;font-family:inherit;
+    flex:0 0 auto;padding:9px 16px;border-radius:20px;border:2px solid transparent;
+    background:var(--tabColor, var(--teal));color:#fff;font-size:.88rem;cursor:pointer;white-space:nowrap;
+    position:relative;font-family:inherit;opacity:.5;transition:opacity .15s, border-color .15s;
   }
   .tab-btn.active{
-    background:var(--tabColor, var(--teal));color:#fff;border-color:var(--tabColor, var(--teal));font-weight:700;
+    opacity:1;border-color:var(--dark);font-weight:700;
   }
   .tab-btn.filled:not(.active)::after{
-    content:"";position:absolute;top:4px;left:6px;width:7px;height:7px;border-radius:50%;background:#2e7d4f;
+    content:"";position:absolute;top:4px;left:6px;width:7px;height:7px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.2);
   }
   .tab-btn.filled.active::after{
     content:"";position:absolute;top:4px;left:6px;width:7px;height:7px;border-radius:50%;background:#fff;
@@ -197,7 +197,7 @@
         <h2><span>רשימת מזונות מלאה (ל-100 גר')</span></h2>
         <div style="padding:12px 16px;"><input type="text" id="refFilter" placeholder="חיפוש מזון..."></div>
         <table>
-          <thead><tr><th style="width:34%">מזון</th><th style="width:16%">קטגוריה</th><th style="width:12.5%">קלוריות</th><th style="width:12.5%">חלבון</th><th style="width:12.5%">שומן</th><th style="width:12.5%">פחמימה</th></tr></thead>
+          <thead><tr><th style="width:30%">מזון</th><th style="width:15%">קטגוריה</th><th style="width:11%">קלוריות</th><th style="width:11%">חלבון</th><th style="width:11%">שומן</th><th style="width:11%">פחמימה</th><th style="width:11%"></th></tr></thead>
           <tbody id="refListBody"></tbody>
         </table>
       </section>
@@ -290,7 +290,7 @@ function buildTargetsFromBasis(basisWeight, kcalPerKg, phase){
   const c = Math.round((remainingKcal / 4) * 10) / 10;
   return {kcal, p, f, c, phase};
 }
-const HISTORY_DAYS = 60;
+const HISTORY_DAYS = 120;
 
 const firebaseConfig = {
   apiKey: "AIzaSyCgMTrWOXyJJaUrYReDN5gkB7UDJytEWDM",
@@ -375,9 +375,9 @@ const BUILTIN_FOODS = [
 let FOODS = [...BUILTIN_FOODS];
 
 const MEALS = [
-  {id:"breakfast", title:"בוקר", rows:6, color:"var(--breakfast)"},
-  {id:"lunch", title:"צהריים", rows:6, color:"var(--lunch)"},
-  {id:"dinner", title:"ערב", rows:6, color:"var(--dinner)"},
+  {id:"breakfast", title:"בוקר", rows:4, color:"var(--breakfast)"},
+  {id:"lunch", title:"צהריים", rows:4, color:"var(--lunch)"},
+  {id:"dinner", title:"ערב", rows:4, color:"var(--dinner)"},
   {id:"extra", title:"ארוחה נוספת / חטיף", rows:4, color:"var(--extra)"},
 ];
 
@@ -438,12 +438,26 @@ async function fbGetUserLog(code){
 async function fbSaveDay(code, date, dayData){
   await db.collection("logs").doc(code).collection("days").doc(date).set(dayData);
 }
-async function fbGetCustomFoods(){
-  const snap = await db.collection("customFoods").get();
-  return snap.docs.map(d => d.data());
+async function fbGetAllFoods(){
+  const snap = await db.collection("foods").get();
+  if(snap.empty){
+    const batch = db.batch();
+    BUILTIN_FOODS.forEach(f=>{
+      const ref = db.collection("foods").doc();
+      batch.set(ref, f);
+    });
+    await batch.commit();
+    const snap2 = await db.collection("foods").get();
+    return snap2.docs.map(d => ({...d.data(), _id: d.id}));
+  }
+  return snap.docs.map(d => ({...d.data(), _id: d.id}));
 }
-async function fbAddCustomFood(food){
-  await db.collection("customFoods").add(food);
+async function fbAddFood(food){
+  const ref = await db.collection("foods").add(food);
+  return ref.id;
+}
+async function fbUpdateFood(id, data){
+  await db.collection("foods").doc(id).update(data);
 }
 
 // ---------------- Login ----------------
@@ -493,9 +507,8 @@ async function enterApp(){
   document.getElementById("whoLabel").textContent = currentUser.isAdmin ? "מנהל" : ("שלום, " + currentUser.name);
 
   try{
-    const customFoods = await fbGetCustomFoods();
-    FOODS = [...BUILTIN_FOODS, ...customFoods];
-  }catch(e){ /* keep builtin only if this fails */ }
+    FOODS = await fbGetAllFoods();
+  }catch(e){ FOODS = [...BUILTIN_FOODS]; /* fallback if Firestore unreachable */ }
 
   if(currentUser.isAdmin){
     document.getElementById("adminView").style.display = "block";
@@ -804,8 +817,15 @@ async function showAdminUserPanel(code, label, userData){
       <span style="font-size:.75rem;color:var(--muted);">🔴 חריגה משמעותית מהיעד &nbsp; 🟡 מתחת ליעד באופן משמעותי</span>
       <button class="addrow" id="exportCsvBtn-${code}">⬇️ ייצוא CSV (מזון) למשתמש זה</button>
     </div>
-    <table><thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th><th>🚶 צעדים</th><th>🏃 ק"מ</th><th>🏋️ כוח (דק')</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="8">טוען...</td></tr></tbody></table>
+    <table><thead><tr id="adminHistHead"><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="5">טוען...</td></tr></tbody></table>
   </section>`;
+
+  const acts = userData.activities || {};
+  const headRow = document.getElementById("adminHistHead");
+  if(acts.steps) headRow.insertAdjacentHTML("beforeend", `<th>🚶 צעדים</th>`);
+  if(acts.running) headRow.insertAdjacentHTML("beforeend", `<th>🏃 ק"מ</th>`);
+  if(acts.strength) headRow.insertAdjacentHTML("beforeend", `<th>🏋️ כוח (דק')</th>`);
+  const histColspan = 5 + (acts.steps?1:0) + (acts.running?1:0) + (acts.strength?1:0);
 
   document.getElementById(`editUserBtn-${code}`).addEventListener("click", ()=>{
     document.getElementById(`userStatsView-${code}`).style.display = "none";
@@ -886,7 +906,7 @@ async function showAdminUserPanel(code, label, userData){
     const body = document.getElementById("adminHistBody");
     const personalTargets = calcPersonalTargets(userData);
     if(dates.length === 0){
-      body.innerHTML = `<tr><td colspan="8" style="color:var(--muted);">אין עדיין נתונים למשתמש זה.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="${histColspan}" style="color:var(--muted);">אין עדיין נתונים למשתמש זה.</td></tr>`;
       return;
     }
     body.innerHTML = dates.map(d=>{
@@ -898,21 +918,22 @@ async function showAdminUserPanel(code, label, userData){
         else if(overBy < -personalTargets.kcal*0.3) rowStyle = 'style="background:#fdf6e3;"';
       }
       const act = (log[d] && log[d].activities) || {};
-      const stepsTxt = act.steps ? act.steps.count : "—";
-      const runTxt = act.running ? act.running.distance : "—";
-      const strengthTxt = act.strength ? act.strength.duration : "—";
-      return `<tr ${rowStyle}><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td><td>${stepsTxt}</td><td>${runTxt}</td><td>${strengthTxt}</td></tr>`;
+      let actCells = "";
+      if(acts.steps) actCells += `<td>${act.steps ? act.steps.count : "—"}</td>`;
+      if(acts.running) actCells += `<td>${act.running ? act.running.distance : "—"}</td>`;
+      if(acts.strength) actCells += `<td>${act.strength ? act.strength.duration : "—"}</td>`;
+      return `<tr ${rowStyle}><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td>${actCells}</tr>`;
     }).join("");
   }catch(e){
-    document.getElementById("adminHistBody").innerHTML = `<tr><td colspan="8" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
+    document.getElementById("adminHistBody").innerHTML = `<tr><td colspan="${histColspan}" style="color:#b04a4a;">שגיאה: ${e && e.message ? e.message : e}</td></tr>`;
   }
 }
 
 function dayTotals(dayData){
   let kcal=0,p=0,f=0,c=0;
   if(!dayData) return {kcal,p,f,c};
-  Object.values(dayData).forEach(rows=>{
-    (rows||[]).forEach(r=>{
+  MEALS.forEach(meal=>{
+    (dayData[meal.id]||[]).forEach(r=>{
       const factor = (r.qty||0)/100;
       kcal += r.kcal100*factor; p += r.p100*factor; f += r.f100*factor; c += r.c100*factor;
     });
@@ -1026,6 +1047,10 @@ function buildActivitySection(){
   `;
   const stepsCountEl = document.getElementById("actStepsCount");
   if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
+  const runDistEl = document.getElementById("actRunningDistance");
+  if(runDistEl) runDistEl.addEventListener("input", recalcDaily);
+  const strengthEl = document.getElementById("actStrengthDuration");
+  if(strengthEl) strengthEl.addEventListener("input", recalcDaily);
 }
 
 function loadActivityData(actData){
@@ -1150,7 +1175,7 @@ function renderTargetBadges(targets){
   const el = document.getElementById("targetBadges");
   if(!el) return;
   const twBadge = targets.targetWeight
-    ? `<div class="badge"><div class="num">${targets.targetWeight} ק"ג</div><div class="lbl">משקל (יעד)</div></div>`
+    ? `<div class="badge"><div class="num">${targets.currentWeight ? targets.currentWeight + ' → ' : ''}${targets.targetWeight} ק"ג</div><div class="lbl">משקל (נוכחי ← יעד)</div></div>`
     : "";
   el.innerHTML = `
     ${twBadge}
@@ -1180,16 +1205,32 @@ function recalcDaily(){
     {val:f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
     {val:c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
   ];
-  if(currentUser && currentUser.activities && currentUser.activities.steps && currentUser.stepsTarget){
-    const stepsInput = document.getElementById("actStepsCount");
-    const stepsVal = stepsInput ? (parseFloat(stepsInput.value)||0) : 0;
-    cards.push({val:stepsVal, target:currentUser.stepsTarget, label:"צעדים", unit:"", dec:0});
+  if(currentUser && currentUser.activities){
+    const acts = currentUser.activities;
+    if(acts.steps){
+      const el = document.getElementById("actStepsCount");
+      const v = el ? (parseFloat(el.value)||0) : 0;
+      cards.push({val:v, target:currentUser.stepsTarget||null, label:"צעדים", unit:"", dec:0});
+    }
+    if(acts.running){
+      const el = document.getElementById("actRunningDistance");
+      const v = el ? (parseFloat(el.value)||0) : 0;
+      cards.push({val:v, target:null, label:"ריצה", unit:" ק\"מ", dec:1});
+    }
+    if(acts.strength){
+      const el = document.getElementById("actStrengthDuration");
+      const v = el ? (parseFloat(el.value)||0) : 0;
+      cards.push({val:v, target:null, label:"אימון כוח", unit:" דק'", dec:0});
+    }
   }
   document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
-    const pct = Math.min(100, (cd.val/cd.target)*100);
-    const delta = cd.val - cd.target;
-    const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
-    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><div class="delta">${deltaTxt}</div></div>`;
+    if(cd.target){
+      const pct = Math.min(100, (cd.val/cd.target)*100);
+      const delta = cd.val - cd.target;
+      const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
+      return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><div class="delta">${deltaTxt}</div></div>`;
+    }
+    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
   }).join("");
 }
 
@@ -1302,7 +1343,8 @@ document.getElementById("af-submit").addEventListener("click", async ()=>{
   msg.style.color = "var(--muted)";
   msg.textContent = "שומר...";
   try{
-    await fbAddCustomFood(newFood);
+    const newId = await fbAddFood(newFood);
+    newFood._id = newId;
     FOODS.push(newFood);
     document.querySelectorAll(".food-select").forEach(sel=>{
       const cur = sel.value;
@@ -1322,11 +1364,65 @@ document.getElementById("af-submit").addEventListener("click", async ()=>{
 function renderRefList(filter){
   const body = document.getElementById("refListBody");
   const f = (filter||"").trim();
-  body.innerHTML = FOODS.filter(food=>food.n.includes(f)).map(food=>`
-    <tr><td style="text-align:right;">${food.n}</td><td>${food.cat}</td><td>${food.kcal}</td><td>${food.p}</td><td>${food.f}</td><td>${food.c}</td></tr>
-  `).join("");
+  body.innerHTML = FOODS.map((food, idx) => ({food, idx}))
+    .filter(x => x.food.n.includes(f))
+    .map(({food, idx}) => {
+      const editable = !!food._id;
+      return `<tr data-idx="${idx}">
+        <td style="text-align:right;">${food.n}</td>
+        <td>${food.cat}</td>
+        <td>${food.kcal}</td>
+        <td>${food.p}</td>
+        <td>${food.f}</td>
+        <td>${food.c}</td>
+        <td>${editable ? `<button class="delrow ref-edit-btn" data-idx="${idx}" title="ערוך" style="color:var(--teal);font-size:1rem;">✎</button>` : ""}</td>
+      </tr>`;
+    }).join("");
+  body.querySelectorAll(".ref-edit-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=> openRefEdit(parseInt(btn.dataset.idx)));
+  });
 }
 document.getElementById("refFilter").addEventListener("input", (e)=>renderRefList(e.target.value));
+
+function openRefEdit(idx){
+  const food = FOODS[idx];
+  if(!food || !food._id) return;
+  const row = document.querySelector(`#refListBody tr[data-idx="${idx}"]`);
+  if(!row) return;
+  row.innerHTML = `
+    <td><input type="text" id="refEditName" value="${food.n}" style="width:100%;"></td>
+    <td><input type="text" id="refEditCat" value="${food.cat}" style="width:100%;"></td>
+    <td><input type="number" id="refEditKcal" value="${food.kcal}" style="width:70px;"></td>
+    <td><input type="number" id="refEditP" value="${food.p}" step="0.1" style="width:60px;"></td>
+    <td><input type="number" id="refEditF" value="${food.f}" step="0.1" style="width:60px;"></td>
+    <td><input type="number" id="refEditC" value="${food.c}" step="0.1" style="width:60px;"></td>
+    <td style="white-space:nowrap;">
+      <button id="refSaveBtn" style="color:var(--teal);border:none;background:none;cursor:pointer;font-size:1rem;">💾</button>
+      <button id="refCancelBtn" style="color:var(--muted);border:none;background:none;cursor:pointer;font-size:1rem;">✕</button>
+    </td>
+  `;
+  document.getElementById("refCancelBtn").addEventListener("click", ()=> renderRefList(document.getElementById("refFilter").value));
+  document.getElementById("refSaveBtn").addEventListener("click", async ()=>{
+    const newName = document.getElementById("refEditName").value.trim();
+    const newCat = document.getElementById("refEditCat").value.trim() || "מותאם אישית";
+    const newKcal = parseFloat(document.getElementById("refEditKcal").value) || 0;
+    const newP = parseFloat(document.getElementById("refEditP").value) || 0;
+    const newF = parseFloat(document.getElementById("refEditF").value) || 0;
+    const newC = parseFloat(document.getElementById("refEditC").value) || 0;
+    if(!newName) return;
+    try{
+      await fbUpdateFood(food._id, {n:newName, cat:newCat, kcal:newKcal, p:newP, f:newF, c:newC});
+      food.n = newName; food.cat = newCat; food.kcal = newKcal; food.p = newP; food.f = newF; food.c = newC;
+      document.querySelectorAll(".food-select").forEach(sel=>{
+        const cur = sel.value;
+        sel.innerHTML = foodOptions(cur);
+      });
+      renderRefList(document.getElementById("refFilter").value);
+    }catch(e){
+      row.innerHTML = `<td colspan="7" style="color:#b04a4a;">שגיאה בשמירה: ${e && e.message ? e.message : e}</td>`;
+    }
+  });
+}
 
 initFirebase();
 </script>
