@@ -104,10 +104,10 @@
   }
   #historyBody tr:hover{background:var(--lightbg) !important;}
 
-  .stat-grid{display:flex;gap:24px;flex-wrap:wrap;}
-  .stat-cell{min-width:80px;}
-  .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:2px;}
-  .stat-value{font-size:1.05rem;font-weight:700;color:var(--dark);}
+  .stat-grid{display:flex;gap:10px;flex-wrap:wrap;}
+  .stat-cell{min-width:100px;background:#fff;border:1px solid var(--grid);border-radius:10px;padding:10px 14px;text-align:center;}
+  .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;font-weight:600;}
+  .stat-value{font-size:1.1rem;font-weight:700;color:var(--dark);}
   .stat-value.accent{color:var(--teal);}
   .period-table{width:100%;border-collapse:collapse;margin-top:4px;}
   .period-table th{font-size:.72rem;color:var(--muted);font-weight:600;padding:4px 6px;text-align:center;}
@@ -963,12 +963,12 @@ async function showAdminUserPanel(code, label, userData){
     <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
         <div class="stat-grid">
-          <div class="stat-cell"><div class="stat-label">גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">משקל יעד</div><div class="stat-value">${tw ? tw.target + ' ק״ג' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
-          <div class="stat-cell"><div class="stat-label">זמן מוערך ליעד</div><div class="stat-value accent">${weeksToGoalHtml}</div></div>
+          <div class="stat-cell"><div class="stat-label">📏 גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">${userData.gender==='female' ? '♀ מין' : '♂ מין'}</div><div class="stat-value">${userData.gender==='female' ? 'נקבה' : 'זכר'}</div></div>
+          <div class="stat-cell"><div class="stat-label">🎂 גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">⚖️ משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">🎯 נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
+          <div class="stat-cell"><div class="stat-label">⏱ זמן מוערך ליעד</div><div class="stat-value accent">${weeksToGoalHtml}</div></div>
         </div>
         ${pt.targetWeight ? `
         <div style="margin-top:14px;">
@@ -1241,10 +1241,24 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
   const hasWeightData = weightEntries && weightEntries.length > 0;
   const hasSleepTarget = !!(userData && userData.sleepTarget);
 
-  const headCells = ["", "קלוריות", "חלבון", "שומן", "פחמימה"];
+  const headCells = ["", "קלוריות", "שומן", "פחמימה", "חלבון"];
   if(hasWeightData) headCells.push("משקל");
   if(primaryAct) headCells.push(primaryAct.label);
   if(hasSleepTarget) headCells.push("שינה");
+
+  const targetWeightVal = calcTargetWeight(userData.height, userData.age, userData.gender);
+
+  let targetCells = `<td>${Math.round(pt.kcal)}</td><td>${Math.round(pt.f)} גר'</td><td>${Math.round(pt.c)} גר'</td><td>${Math.round(pt.p)} גר'</td>`;
+  if(hasWeightData){
+    targetCells += `<td>${targetWeightVal ? targetWeightVal.target + ' ק"ג' : '—'}</td>`;
+  }
+  if(primaryAct){
+    targetCells += `<td>${primaryAct.target ? primaryAct.target : '—'}</td>`;
+  }
+  if(hasSleepTarget){
+    targetCells += `<td>${userData.sleepTarget} שעות</td>`;
+  }
+  const targetRow = `<tr style="background:var(--lightbg);"><td class="stat-period-label">🎯 יעד</td>${targetCells}</tr>`;
 
   const rows = periods.map(per=>{
     let stats, range;
@@ -1262,7 +1276,7 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
       cells = `<td colspan="4" style="color:var(--muted);font-size:.82rem;">אין נתונים</td>`;
     }else{
       const pk = pctOf(stats.kcal, pt.kcal), pp = pctOf(stats.p, pt.p), pf = pctOf(stats.f, pt.f), pc = pctOf(stats.c, pt.c);
-      cells = `<td>${pctCell(pk)}</td><td>${pctCell(pp)}</td><td>${pctCell(pf)}</td><td>${pctCell(pc)}</td>`;
+      cells = `<td>${pctCell(pk)}</td><td>${pctCell(pf)}</td><td>${pctCell(pc)}</td><td>${pctCell(pp)}</td>`;
     }
 
     if(hasWeightData){
@@ -1293,7 +1307,7 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
     return `<tr><td class="stat-period-label">${per.label}</td>${cells}</tr>`;
   }).join("");
 
-  return `<table class="period-table"><thead><tr><th>${headCells.join('</th><th>')}</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="period-table"><thead><tr><th>${headCells.join('</th><th>')}</th></tr></thead><tbody>${targetRow}${rows}</tbody></table>`;
 }
 
 function dayTotals(dayData){
@@ -1354,9 +1368,9 @@ function renderWeekSummary(){
 
   const rows = [
     {val:stats.kcal, target:currentTargets.kcal, label:"קלוריות", unit:"", dec:0},
-    {val:stats.p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
     {val:stats.f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
     {val:stats.c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
+    {val:stats.p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
   ];
 
   const cardsHtml = rows.map(cd=>{
@@ -1678,20 +1692,14 @@ function recalcDaily(){
   });
   const cards = [
     {val:kcal, target:currentTargets.kcal, label:"קלוריות", unit:"", dec:0},
-    {val:p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
     {val:f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
     {val:c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
+    {val:p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
   ];
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
     const denom = currentUser.originalWeight - currentUser.targetWeightVal;
     const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
     cards.push({special:"weightJourney", pct: journeyPct});
-  }
-  if(currentUser && currentUser.sleepTarget){
-    const bEl = document.getElementById("sleepBedtime");
-    const wEl = document.getElementById("sleepWake");
-    const hours = (bEl && wEl) ? computeSleepHours(bEl.value, wEl.value) : null;
-    cards.push({val:(hours||0), target:currentUser.sleepTarget, label:"שינה", unit:" שעות", dec:1});
   }
   if(currentUser && currentUser.activities){
     const acts = currentUser.activities;
@@ -1710,6 +1718,12 @@ function recalcDaily(){
       const done = el ? el.checked : false;
       cards.push({text: done ? "✓ בוצע היום" : "לא בוצע היום", label:"אימון כוח"});
     }
+  }
+  if(currentUser && currentUser.sleepTarget){
+    const bEl = document.getElementById("sleepBedtime");
+    const wEl = document.getElementById("sleepWake");
+    const hours = (bEl && wEl) ? computeSleepHours(bEl.value, wEl.value) : null;
+    cards.push({val:(hours||0), target:currentUser.sleepTarget, label:"שינה", unit:" שעות", dec:1});
   }
   document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
     if(cd.special === "weightJourney"){
