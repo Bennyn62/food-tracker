@@ -261,7 +261,7 @@
 
       <div id="weekSummarySection" style="display:none;"></div>
 
-      <div class="daily-total">
+      <div class="daily-total" id="persistentDailyTotal">
         <h2>סה"כ יומי</h2>
         <div class="dt-grid" id="dailyTotals"></div>
       </div>
@@ -564,6 +564,13 @@ async function enterApp(){
     try{
       currentLog = await fbGetUserLog(currentUser.code);
     }catch(e){ currentLog = {}; }
+    try{
+      const wEntries = await fbGetWeightLog(currentUser.code);
+      currentUser.originalWeight = getOriginalWeight(wEntries, currentUser.weight);
+      currentUser.currentWeightVal = getLatestWeight(wEntries, currentUser.weight);
+      const twCalc = calcTargetWeight(currentUser.height, currentUser.age);
+      currentUser.targetWeightVal = twCalc ? twCalc.target : null;
+    }catch(e){ /* ignore */ }
     document.getElementById("dateInput").value = currentDate;
     loadDate(currentDate);
     renderWeekSummary();
@@ -912,14 +919,27 @@ async function showAdminUserPanel(code, label, userData){
     else weightRemainingHtml = `${Math.abs(diff)} ק״ג להעלאה`;
   }
 
+  let weeksToGoalHtml = "—";
+  if(tw && originalWeight!=null){
+    const totalDiff = originalWeight - tw.target;
+    if(totalDiff <= 0){
+      weeksToGoalHtml = "🎉 היעד הושג";
+    }else{
+      const weeks = Math.round(totalDiff / WEEKLY_WEIGHT_LOSS_TARGET);
+      weeksToGoalHtml = `~${weeks} שבועות`;
+    }
+  }
+
   const statsHtml = `
     <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
         <div class="stat-grid">
           <div class="stat-cell"><div class="stat-label">גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">משקל יעד</div><div class="stat-value">${tw ? tw.target + ' ק״ג' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
+          <div class="stat-cell"><div class="stat-label">זמן מוערך ליעד</div><div class="stat-value accent">${weeksToGoalHtml}</div></div>
         </div>
         ${pt.targetWeight ? `
         <div style="margin-top:14px;">
@@ -1294,40 +1314,33 @@ function renderWeekSummary(){
 
   if(!stats){
     container.innerHTML = `
-      <section>
-        <h2 style="background:var(--dark);"><span>📊 סיכום שבועי</span><span class="meal-total">${rangeLabel}</span></h2>
-        <div style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem;">אין עדיין נתונים לשבוע הנוכחי.</div>
-      </section>`;
+      <div class="daily-total">
+        <h2>📊 סיכום שבועי <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel}</span></h2>
+        <div style="padding:10px 4px;color:#cfe0da;font-size:.9rem;">אין עדיין נתונים לשבוע הנוכחי.</div>
+      </div>`;
     return;
   }
 
-  const pk = pctOf(stats.kcal, currentTargets.kcal);
-  const pp = pctOf(stats.p, currentTargets.p);
-  const pf = pctOf(stats.f, currentTargets.f);
-  const pc = pctOf(stats.c, currentTargets.c);
-
   const rows = [
-    {label:"קלוריות", avg:stats.kcal.toFixed(0), target:currentTargets.kcal, pct:pk, unit:""},
-    {label:"חלבון", avg:stats.p.toFixed(1), target:currentTargets.p, pct:pp, unit:" גר'"},
-    {label:"שומן", avg:stats.f.toFixed(1), target:currentTargets.f, pct:pf, unit:" גר'"},
-    {label:"פחמימה", avg:stats.c.toFixed(1), target:currentTargets.c, pct:pc, unit:" גר'"},
+    {val:stats.kcal, target:currentTargets.kcal, label:"קלוריות", unit:"", dec:0},
+    {val:stats.p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
+    {val:stats.f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
+    {val:stats.c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
   ];
 
+  const cardsHtml = rows.map(cd=>{
+    const rawPct = cd.target ? (cd.val/cd.target)*100 : null;
+    const pct = rawPct!==null ? Math.min(100, rawPct) : 0;
+    const barColor = rawPct!==null ? (pctColor(Math.round(rawPct)) || "var(--accent)") : "var(--accent)";
+    const pctTxt = rawPct!==null ? ` (${Math.round(rawPct)}%)` : "";
+    return `<div class="dt-card"><div class="lbl">${cd.label} (ממוצע יומי)</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${Math.round(cd.target)}${cd.unit}${pctTxt}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div></div>`;
+  }).join("");
+
   container.innerHTML = `
-    <section>
-      <h2 style="background:var(--dark);"><span>📊 סיכום שבועי</span><span class="meal-total">${rangeLabel} · ${stats.days} ${stats.days===1?'יום':'ימים'} עם נתונים</span></h2>
-      <div style="padding:16px;">
-        <div class="stat-grid">
-          ${rows.map(r=>`
-            <div class="stat-cell">
-              <div class="stat-label">${r.label} (ממוצע יומי)</div>
-              <div class="stat-value">${r.avg}${r.unit}</div>
-              <div style="font-size:.8rem;color:var(--teal);font-weight:700;margin-top:2px;">${r.pct!==null ? r.pct+'%' : '—'} מהיעד</div>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    </section>
+    <div class="daily-total">
+      <h2>📊 סיכום שבועי <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel} · ${stats.days} ${stats.days===1?'יום':'ימים'} עם נתונים</span></h2>
+      <div class="dt-grid">${cardsHtml}</div>
+    </div>
   `;
 }
 
@@ -1351,6 +1364,8 @@ function switchTab(tabId){
   });
   const greetEl = document.getElementById("greetingBanner");
   if(greetEl) greetEl.textContent = GREETINGS[tabId] || "";
+  const persistentDT = document.getElementById("persistentDailyTotal");
+  if(persistentDT) persistentDT.style.display = (tabId === "week") ? "none" : "block";
 }
 
 document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
@@ -1405,7 +1420,7 @@ function buildSleepSection(){
     <h2 style="background:var(--dark);"><span>🛏️ שינה</span><span class="meal-total" id="sleepDurationLabel">— שעות</span></h2>
     <div style="padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת שינה</label><input type="time" id="sleepBedtime"></div>
-      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת השכמה</label><input type="time" id="sleepWake"></div>
+      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת השכמה</label><input type="time" id="sleepWake"><span id="sleepWakeComputed" style="font-size:.78rem;color:var(--teal);font-weight:600;margin-right:8px;"></span></div>
     </div>
   `;
   section.querySelector("#sleepBedtime").addEventListener("change", onSleepInputChange);
@@ -1413,12 +1428,18 @@ function buildSleepSection(){
   return section;
 }
 
+function updateSleepDisplays(hours){
+  const lbl = document.getElementById("sleepDurationLabel");
+  if(lbl) lbl.textContent = hours!==null ? `${hours} שעות` : "— שעות";
+  const wc = document.getElementById("sleepWakeComputed");
+  if(wc) wc.textContent = hours!==null ? `(${hours} שעות שינה)` : "";
+}
+
 function onSleepInputChange(){
   const bedtime = (document.getElementById("sleepBedtime")||{}).value;
   const wake = (document.getElementById("sleepWake")||{}).value;
   const hours = computeSleepHours(bedtime, wake);
-  const lbl = document.getElementById("sleepDurationLabel");
-  if(lbl) lbl.textContent = hours!==null ? `${hours} שעות` : "— שעות";
+  updateSleepDisplays(hours);
   recalcDaily();
 }
 
@@ -1429,8 +1450,7 @@ function loadSleepData(sleepData){
   if(bEl) bEl.value = sleepData.bedtime || "";
   if(wEl) wEl.value = sleepData.wake || "";
   const hours = computeSleepHours(sleepData.bedtime, sleepData.wake);
-  const lbl = document.getElementById("sleepDurationLabel");
-  if(lbl) lbl.textContent = hours!==null ? `${hours} שעות` : "— שעות";
+  updateSleepDisplays(hours);
 }
 
 function collectSleepData(){
@@ -1631,6 +1651,11 @@ function recalcDaily(){
     {val:f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
     {val:c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
   ];
+  if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
+    const denom = currentUser.originalWeight - currentUser.targetWeightVal;
+    const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
+    cards.push({special:"weightJourney", pct: journeyPct});
+  }
   if(currentUser && currentUser.sleepTarget){
     const bEl = document.getElementById("sleepBedtime");
     const wEl = document.getElementById("sleepWake");
@@ -1656,6 +1681,11 @@ function recalcDaily(){
     }
   }
   document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
+    if(cd.special === "weightJourney"){
+      const clamped = Math.max(0, Math.min(100, cd.pct));
+      const barColor = pctColor(Math.round(cd.pct)) || "var(--accent)";
+      return `<div class="dt-card"><div class="lbl">התקדמות למשקל יעד</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
+    }
     if(cd.text !== undefined){
       return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
     }
