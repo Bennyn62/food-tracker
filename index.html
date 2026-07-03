@@ -116,7 +116,7 @@
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-  .adduser-grid{display:grid;grid-template-columns:1.2fr 1fr .7fr .6fr .6fr .5fr auto;gap:8px;padding:0 16px 16px;}
+  .adduser-grid{display:grid;grid-template-columns:1.3fr 1.2fr .8fr .7fr .7fr .6fr;gap:8px;padding:0 16px 16px;}
   .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
   .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
@@ -213,7 +213,6 @@
             <input type="number" id="newUserHeight" placeholder="גובה (ס״מ)" min="0" step="1">
             <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
             <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
-            <button id="addUserBtn">+ הוסף משתמש</button>
           </div>
           <div class="activity-toggle-row">
             <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
@@ -227,6 +226,10 @@
           <div class="activity-toggle-row">
             <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
             <input type="number" id="newUserSleepTarget" placeholder="יעד שעות שינה" min="0" step="0.5" style="width:140px;">
+          </div>
+          <!-- future target/definition sections should be added above this line -->
+          <div style="padding:14px 16px;">
+            <button id="addUserBtn" class="btn-save" style="padding:10px 24px;border-radius:8px;">+ הוסף משתמש</button>
           </div>
           <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
         </section>
@@ -1366,20 +1369,45 @@ function renderWeekSummary(){
     return;
   }
 
-  const rows = [
-    {val:stats.kcal, target:currentTargets.kcal, label:"קלוריות", unit:"", dec:0},
-    {val:stats.f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
-    {val:stats.c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
-    {val:stats.p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
+  const cards = [
+    {val:stats.kcal, target:currentTargets.kcal, label:"קלוריות (ממוצע יומי)", unit:"", dec:0},
+    {val:stats.f, target:currentTargets.f, label:"שומן (ממוצע יומי)", unit:" גר'", dec:1},
+    {val:stats.c, target:currentTargets.c, label:"פחמימה (ממוצע יומי)", unit:" גר'", dec:1},
+    {val:stats.p, target:currentTargets.p, label:"חלבון (ממוצע יומי)", unit:" גר'", dec:1},
   ];
 
-  const cardsHtml = rows.map(cd=>{
-    const rawPct = cd.target ? (cd.val/cd.target)*100 : null;
-    const pct = rawPct!==null ? Math.min(100, rawPct) : 0;
-    const barColor = rawPct!==null ? (pctColor(Math.round(rawPct)) || "var(--accent)") : "var(--accent)";
-    const pctTxt = rawPct!==null ? ` (${Math.round(rawPct)}%)` : "";
-    return `<div class="dt-card"><div class="lbl">${cd.label} (ממוצע יומי)</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${Math.round(cd.target)}${cd.unit}${pctTxt}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div></div>`;
-  }).join("");
+  if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
+    const denom = currentUser.originalWeight - currentUser.targetWeightVal;
+    const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
+    cards.push({special:"weightJourney", pct: journeyPct});
+  }
+
+  if(currentUser && currentUser.activities){
+    const acts = currentUser.activities;
+    if(acts.steps){
+      const avg = activityPeriodValue(currentLog, "steps", range.start, range.end);
+      cards.push({val: avg||0, target: currentUser.stepsTarget||null, label:"צעדים (ממוצע יומי)", unit:"", dec:0});
+    }
+    if(acts.running){
+      const avg = activityPeriodValue(currentLog, "running", range.start, range.end);
+      cards.push({val: avg||0, target: currentUser.runningTarget||null, label:"ריצה (ממוצע יומי)", unit:" ק\"מ", dec:1});
+    }
+    if(acts.strength){
+      const sessions = activityPeriodValue(currentLog, "strength", range.start, range.end);
+      if(currentUser.strengthWeeklyTarget){
+        cards.push({val: sessions, target: currentUser.strengthWeeklyTarget, label:"אימוני כוח השבוע", unit:"", dec:0});
+      }else{
+        cards.push({text: `${sessions} אימונים השבוע`, label:"אימון כוח"});
+      }
+    }
+  }
+
+  if(currentUser && currentUser.sleepTarget){
+    const avgSleep = sleepPeriodAvg(currentLog, range.start, range.end);
+    cards.push({val: avgSleep||0, target: currentUser.sleepTarget, label:"שינה (ממוצע יומי)", unit:" שעות", dec:1});
+  }
+
+  const cardsHtml = cards.map(cardHTML).join("");
 
   container.innerHTML = `
     <div class="daily-total">
@@ -1682,6 +1710,26 @@ function renderTargetBadges(targets){
   `;
 }
 
+function cardHTML(cd){
+  if(cd.special === "weightJourney"){
+    const clamped = Math.max(0, Math.min(100, cd.pct));
+    const barColor = pctColor(Math.round(cd.pct)) || "var(--accent)";
+    return `<div class="dt-card"><div class="lbl">התקדמות למשקל יעד</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
+  }
+  if(cd.text !== undefined){
+    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
+  }
+  if(cd.target){
+    const rawPct = (cd.val/cd.target)*100;
+    const pct = Math.min(100, rawPct);
+    const barColor = pctColor(Math.round(rawPct)) || "var(--accent)";
+    const delta = cd.val - cd.target;
+    const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
+    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
+  }
+  return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
+}
+
 function recalcDaily(){
   let kcal=0,p=0,f=0,c=0;
   MEALS.forEach(m=>{
@@ -1725,25 +1773,7 @@ function recalcDaily(){
     const hours = (bEl && wEl) ? computeSleepHours(bEl.value, wEl.value) : null;
     cards.push({val:(hours||0), target:currentUser.sleepTarget, label:"שינה", unit:" שעות", dec:1});
   }
-  document.getElementById("dailyTotals").innerHTML = cards.map(cd=>{
-    if(cd.special === "weightJourney"){
-      const clamped = Math.max(0, Math.min(100, cd.pct));
-      const barColor = pctColor(Math.round(cd.pct)) || "var(--accent)";
-      return `<div class="dt-card"><div class="lbl">התקדמות למשקל יעד</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
-    }
-    if(cd.text !== undefined){
-      return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
-    }
-    if(cd.target){
-      const rawPct = (cd.val/cd.target)*100;
-      const pct = Math.min(100, rawPct);
-      const barColor = pctColor(Math.round(rawPct)) || "var(--accent)";
-      const delta = cd.val - cd.target;
-      const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
-      return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
-    }
-    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
-  }).join("");
+  document.getElementById("dailyTotals").innerHTML = cards.map(cardHTML).join("");
 }
 
 function collectMealData(mealId){
