@@ -116,7 +116,7 @@
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-  .adduser-grid{display:grid;grid-template-columns:1.3fr 1fr .7fr .7fr .6fr auto;gap:8px;padding:0 16px 16px;}
+  .adduser-grid{display:grid;grid-template-columns:1.2fr 1fr .7fr .6fr .6fr .5fr auto;gap:8px;padding:0 16px 16px;}
   .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
   .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
@@ -206,6 +206,10 @@
           <div class="adduser-grid">
             <input type="text" id="newUserName" placeholder="שם המשתמש">
             <input type="text" id="newUserCode" placeholder="קוד ייחודי (או השאר ריק ליצירה אוטומטית)">
+            <select id="newUserGender">
+              <option value="male">זכר</option>
+              <option value="female">נקבה</option>
+            </select>
             <input type="number" id="newUserHeight" placeholder="גובה (ס״מ)" min="0" step="1">
             <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
             <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
@@ -276,7 +280,16 @@ const ADMIN_CODE = "BENNY";
 const TARGETS_DEFAULT = {kcal:2200, p:155, f:65, c:210};
 let currentTargets = {...TARGETS_DEFAULT};
 
+const ACTIVITY_MULTIPLIER = 1.45;
+const DEFICIT_FACTOR = 0.82;
+
+function bmr(weight, height, age, gender){
+  const base = 10*weight + 6.25*height - 5*age;
+  return gender === "female" ? base - 161 : base + 5;
+}
+
 function calcPersonalTargets(userData){
+  const gender = (userData && userData.gender) || "male";
   const weight = userData && userData.weight;
   const height = userData && userData.height;
   const age = userData && userData.age;
@@ -285,11 +298,11 @@ function calcPersonalTargets(userData){
 
   if(!height){
     // no height on file — can't compute a real target weight, fall back to current-weight estimate
-    return buildTargetsFromBasis(weight, 30, "ללא נתוני גובה");
+    return buildTargetsFromBasisSimple(weight, 30, "ללא נתוני גובה");
   }
 
-  const tw = calcTargetWeight(height, age);
-  if(!tw) return buildTargetsFromBasis(weight, 30, "ללא נתוני גובה");
+  const tw = calcTargetWeight(height, age, gender);
+  if(!tw) return buildTargetsFromBasisSimple(weight, 30, "ללא נתוני גובה");
 
   const targetWeight = tw.target;
   const diff = weight - targetWeight; // positive = still above goal
@@ -297,20 +310,34 @@ function calcPersonalTargets(userData){
 
   if(diff <= nearGoalThreshold){
     // at/near goal weight — switch to maintenance
-    const t = buildTargetsFromBasis(targetWeight, 33, "שימור (יעד הושג)");
+    const t = age
+      ? buildTargetsFromBasisBMR(targetWeight, height, age, gender, 1.0, "שימור (יעד הושג)")
+      : buildTargetsFromBasisSimple(targetWeight, 33, "שימור (יעד הושג)");
     t.targetWeight = targetWeight;
     t.currentWeight = weight;
     return t;
   }else{
     // still above goal — deficit based on TARGET weight (fixed, doesn't shrink as they lose weight)
-    const t = buildTargetsFromBasis(targetWeight, 28, "גירעון (ירידה במשקל)");
+    const t = age
+      ? buildTargetsFromBasisBMR(targetWeight, height, age, gender, DEFICIT_FACTOR, "גירעון (ירידה במשקל)")
+      : buildTargetsFromBasisSimple(targetWeight, 28, "גירעון (ירידה במשקל)");
     t.targetWeight = targetWeight;
     t.currentWeight = weight;
     return t;
   }
 }
 
-function buildTargetsFromBasis(basisWeight, kcalPerKg, phase){
+function buildTargetsFromBasisBMR(basisWeight, height, age, gender, factor, phase){
+  const bmrVal = bmr(basisWeight, height, age, gender);
+  const kcal = Math.round(bmrVal * ACTIVITY_MULTIPLIER * factor);
+  const p = Math.round(basisWeight * 2.2 * 10) / 10;
+  const f = Math.round((kcal * 0.27 / 9) * 10) / 10;
+  const remainingKcal = Math.max(kcal - (p*4) - (f*9), 0);
+  const c = Math.round((remainingKcal / 4) * 10) / 10;
+  return {kcal, p, f, c, phase};
+}
+
+function buildTargetsFromBasisSimple(basisWeight, kcalPerKg, phase){
   const kcal = Math.round(basisWeight * kcalPerKg);
   const p = Math.round(basisWeight * 2.2 * 10) / 10;
   const f = Math.round((kcal * 0.27 / 9) * 10) / 10;
@@ -413,11 +440,12 @@ let currentUser = null;
 let currentDate = todayStr();
 let currentLog = {};
 
-function calcTargetWeight(heightCm, age){
+function calcTargetWeight(heightCm, age, gender){
   if(!heightCm || heightCm <= 0) return null;
   const h = heightCm/100;
   let bmiLow, bmiHigh;
   if(age && age >= 65){ bmiLow = 23; bmiHigh = 27; }
+  else if(gender === "female"){ bmiLow = 18.5; bmiHigh = 23.9; }
   else { bmiLow = 18.5; bmiHigh = 24.9; }
   const low = bmiLow * h * h;
   const high = bmiHigh * h * h;
@@ -513,7 +541,7 @@ async function doLogin(){
       msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
+    currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
@@ -568,7 +596,7 @@ async function enterApp(){
       const wEntries = await fbGetWeightLog(currentUser.code);
       currentUser.originalWeight = getOriginalWeight(wEntries, currentUser.weight);
       currentUser.currentWeightVal = getLatestWeight(wEntries, currentUser.weight);
-      const twCalc = calcTargetWeight(currentUser.height, currentUser.age);
+      const twCalc = calcTargetWeight(currentUser.height, currentUser.age, currentUser.gender);
       currentUser.targetWeightVal = twCalc ? twCalc.target : null;
     }catch(e){ /* ignore */ }
     document.getElementById("dateInput").value = currentDate;
@@ -584,6 +612,7 @@ async function enterApp(){
 document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const name = document.getElementById("newUserName").value.trim();
   let code = document.getElementById("newUserCode").value.trim();
+  const gender = document.getElementById("newUserGender").value;
   const height = parseFloat(document.getElementById("newUserHeight").value) || null;
   const weight = parseFloat(document.getElementById("newUserWeight").value) || null;
   const age = parseFloat(document.getElementById("newUserAge").value) || null;
@@ -604,7 +633,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     if(users.find(u=>u.code === code)){
       msg.style.color="#b04a4a"; msg.textContent="הקוד הזה כבר קיים, בחר קוד אחר."; return;
     }
-    await fbAddUser(code, {name, height, weight, age,
+    await fbAddUser(code, {name, gender, height, weight, age,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
       stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget});
     document.getElementById("newUserName").value = "";
@@ -775,7 +804,7 @@ async function renderWeightLog(code, userData){
   body.innerHTML = `<tr><td colspan="4">טוען...</td></tr>`;
   try{
     const entries = await fbGetWeightLog(code);
-    const tw = calcTargetWeight(userData.height, userData.age);
+    const tw = calcTargetWeight(userData.height, userData.age, userData.gender);
     const chartEl = document.getElementById(`weightChart-${code}`);
     if(chartEl) chartEl.innerHTML = buildWeightChartSVG(entries, tw);
     if(entries.length === 0){
@@ -899,7 +928,7 @@ async function showAdminUserPanel(code, label, userData){
   const panel = document.getElementById("adminUserPanel");
   panel.innerHTML = `<section><h2><span>${label}</span></h2><div style="padding:20px;color:var(--muted);">טוען...</div></section>`;
 
-  const tw = calcTargetWeight(userData.height, userData.age);
+  const tw = calcTargetWeight(userData.height, userData.age, userData.gender);
   const pt = calcPersonalTargets(userData);
 
   let log = {};
@@ -954,8 +983,9 @@ async function showAdminUserPanel(code, label, userData){
         <div id="userActionMsg-${code}" style="font-size:.82rem;margin-top:6px;"></div>
       </div>
       <div id="userEditForm-${code}" style="display:none;margin-top:10px;">
-        <div class="addfood-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="addfood-grid" style="grid-template-columns:repeat(5,1fr);">
           <div class="af-field"><label>שם</label><input type="text" id="editName-${code}" value="${userData.name||''}"></div>
+          <div class="af-field"><label>מין</label><select id="editGender-${code}"><option value="male" ${userData.gender!=='female'?'selected':''}>זכר</option><option value="female" ${userData.gender==='female'?'selected':''}>נקבה</option></select></div>
           <div class="af-field"><label>גובה (ס״מ)</label><input type="number" id="editHeight-${code}" value="${userData.height||''}"></div>
           <div class="af-field"><label>משקל (ק״ג)</label><input type="number" id="editWeight-${code}" value="${userData.weight||''}" step="0.1"></div>
           <div class="af-field"><label>גיל</label><input type="number" id="editAge-${code}" value="${userData.age||''}"></div>
@@ -1021,6 +1051,7 @@ async function showAdminUserPanel(code, label, userData){
   });
   document.getElementById(`saveEditBtn-${code}`).addEventListener("click", async ()=>{
     const newName = document.getElementById(`editName-${code}`).value.trim();
+    const newGender = document.getElementById(`editGender-${code}`).value;
     const newHeight = parseFloat(document.getElementById(`editHeight-${code}`).value) || null;
     const newWeight = parseFloat(document.getElementById(`editWeight-${code}`).value) || null;
     const newAge = parseFloat(document.getElementById(`editAge-${code}`).value) || null;
@@ -1032,7 +1063,7 @@ async function showAdminUserPanel(code, label, userData){
     const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
     const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
+    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
