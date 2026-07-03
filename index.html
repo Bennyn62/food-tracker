@@ -155,58 +155,78 @@
     </div>
 
     <div id="adminView" style="display:none;">
-      <section>
-        <h2><span>ניהול משתמשים</span></h2>
-        <div class="adduser-grid">
-          <input type="text" id="newUserName" placeholder="שם המשתמש">
-          <input type="text" id="newUserCode" placeholder="קוד ייחודי (או השאר ריק ליצירה אוטומטית)">
-          <input type="number" id="newUserHeight" placeholder="גובה (ס״מ)" min="0" step="1">
-          <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
-          <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
-          <button id="addUserBtn">+ הוסף משתמש</button>
-        </div>
-        <div class="activity-toggle-row">
-          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות למשתמש:</span>
-          <label><input type="checkbox" id="newUserActSteps" checked> צעדים</label>
-          <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500" style="width:140px;">
-          <label><input type="checkbox" id="newUserActRunning"> ריצה</label>
-          <input type="number" id="newUserRunningTarget" placeholder="יעד ק״מ יומי" min="0" step="0.5" style="width:130px;">
-          <label><input type="checkbox" id="newUserActStrength"> אימון כוח</label>
-          <input type="number" id="newUserStrengthTarget" placeholder="יעד אימונים לשבוע" min="0" step="1" style="width:150px;">
-        </div>
-        <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
-        <div class="admin-users" id="adminUserList"></div>
-        <div style="padding:0 16px 14px;">
-          <button class="addrow" id="exportAllCsvBtn">⬇️ ייצוא CSV לכל המשתמשים</button>
-          <span id="exportAllMsg" style="font-size:.8rem;margin-right:8px;"></span>
-        </div>
-      </section>
-      <div id="adminUserPanel"></div>
+      <div class="tab-bar" id="adminTabBar">
+        <button class="tab-btn" data-atab="manage" style="--tabColor:var(--teal);">👥 ניהול משתמשים</button>
+        <button class="tab-btn" data-atab="foods" style="--tabColor:var(--lunch);">🍽️ מזונות</button>
+        <button class="tab-btn" data-atab="addUser" style="--tabColor:var(--breakfast);">➕ הוספת משתמש</button>
+      </div>
 
-      <section id="addFoodSection">
-        <h2><span>הוספת מזון חדש לרשימה (משותף לכולם)</span></h2>
-        <div style="padding:14px 16px;">
-          <div class="addfood-grid">
-            <div class="af-field"><label>שם המזון</label><input type="text" id="af-name"></div>
-            <div class="af-field"><label>קטגוריה</label><input type="text" id="af-cat" value="מותאם אישית"></div>
-            <div class="af-field"><label>קלוריות ל-100 גר'</label><input type="number" id="af-kcal" min="0" step="1"></div>
-            <div class="af-field"><label>חלבון ל-100 גר'</label><input type="number" id="af-p" min="0" step="0.1"></div>
-            <div class="af-field"><label>שומן ל-100 גר'</label><input type="number" id="af-f" min="0" step="0.1"></div>
-            <div class="af-field"><label>פחמימה ל-100 גר'</label><input type="number" id="af-c" min="0" step="0.1"></div>
+      <div id="adminPanel-manage" class="admin-tab-panel">
+        <section>
+          <h2><span>ניהול משתמשים</span></h2>
+          <div class="admin-users" id="adminUserList"></div>
+          <div style="padding:0 16px 14px;">
+            <button class="addrow" id="exportAllCsvBtn">⬇️ ייצוא CSV לכל המשתמשים</button>
+            <span id="exportAllMsg" style="font-size:.8rem;margin-right:8px;"></span>
           </div>
-          <button class="addrow" id="af-submit" style="margin-top:10px;">+ הוסף מזון לרשימה</button>
-          <div id="af-msg" style="font-size:.82rem;color:var(--teal);margin-top:6px;"></div>
-        </div>
-      </section>
+        </section>
+        <div id="adminUserPanel"></div>
+      </div>
 
-      <section id="refListSection">
-        <h2><span>רשימת מזונות מלאה (ל-100 גר')</span></h2>
-        <div style="padding:12px 16px;"><input type="text" id="refFilter" placeholder="חיפוש מזון..."></div>
-        <table>
-          <thead><tr><th style="width:30%">מזון</th><th style="width:15%">קטגוריה</th><th style="width:11%">קלוריות</th><th style="width:11%">חלבון</th><th style="width:11%">שומן</th><th style="width:11%">פחמימה</th><th style="width:11%"></th></tr></thead>
-          <tbody id="refListBody"></tbody>
-        </table>
-      </section>
+      <div id="adminPanel-foods" class="admin-tab-panel" style="display:none;">
+        <section id="addFoodSection">
+          <h2><span>הוספת מזון חדש לרשימה (משותף לכולם)</span></h2>
+          <div style="padding:14px 16px;">
+            <div class="addfood-grid">
+              <div class="af-field"><label>שם המזון</label><input type="text" id="af-name"></div>
+              <div class="af-field"><label>קטגוריה</label><input type="text" id="af-cat" value="מותאם אישית"></div>
+              <div class="af-field"><label>קלוריות ל-100 גר'</label><input type="number" id="af-kcal" min="0" step="1"></div>
+              <div class="af-field"><label>חלבון ל-100 גר'</label><input type="number" id="af-p" min="0" step="0.1"></div>
+              <div class="af-field"><label>שומן ל-100 גר'</label><input type="number" id="af-f" min="0" step="0.1"></div>
+              <div class="af-field"><label>פחמימה ל-100 גר'</label><input type="number" id="af-c" min="0" step="0.1"></div>
+            </div>
+            <button class="addrow" id="af-submit" style="margin-top:10px;">+ הוסף מזון לרשימה</button>
+            <div id="af-msg" style="font-size:.82rem;color:var(--teal);margin-top:6px;"></div>
+          </div>
+        </section>
+
+        <section id="refListSection">
+          <h2><span>רשימת מזונות מלאה (ל-100 גר')</span></h2>
+          <div style="padding:12px 16px;"><input type="text" id="refFilter" placeholder="חיפוש מזון..."></div>
+          <table>
+            <thead><tr><th style="width:30%">מזון</th><th style="width:15%">קטגוריה</th><th style="width:11%">קלוריות</th><th style="width:11%">חלבון</th><th style="width:11%">שומן</th><th style="width:11%">פחמימה</th><th style="width:11%"></th></tr></thead>
+            <tbody id="refListBody"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <div id="adminPanel-addUser" class="admin-tab-panel" style="display:none;">
+        <section>
+          <h2><span>הוספת משתמש חדש</span></h2>
+          <div class="adduser-grid">
+            <input type="text" id="newUserName" placeholder="שם המשתמש">
+            <input type="text" id="newUserCode" placeholder="קוד ייחודי (או השאר ריק ליצירה אוטומטית)">
+            <input type="number" id="newUserHeight" placeholder="גובה (ס״מ)" min="0" step="1">
+            <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
+            <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
+            <button id="addUserBtn">+ הוסף משתמש</button>
+          </div>
+          <div class="activity-toggle-row">
+            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
+            <label><input type="checkbox" id="newUserActSteps" checked> צעדים</label>
+            <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500" style="width:140px;">
+            <label><input type="checkbox" id="newUserActRunning"> ריצה</label>
+            <input type="number" id="newUserRunningTarget" placeholder="יעד ק״מ יומי" min="0" step="0.5" style="width:130px;">
+            <label><input type="checkbox" id="newUserActStrength"> אימון כוח</label>
+            <input type="number" id="newUserStrengthTarget" placeholder="יעד אימונים לשבוע" min="0" step="1" style="width:150px;">
+          </div>
+          <div class="activity-toggle-row">
+            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
+            <input type="number" id="newUserSleepTarget" placeholder="יעד שעות שינה" min="0" step="0.5" style="width:140px;">
+          </div>
+          <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
+        </section>
+      </div>
     </div>
 
     <div id="userView" style="display:none;">
@@ -247,7 +267,7 @@
       </div>
     </div>
 
-    <div class="note">הנתונים נשמרים ב-Firebase (Firestore) בענן, בפרויקט הפרטי שלך. שיתוף לפי קוד בלבד — אין הרשאות משתמש אמיתיות ברמת השרת, אז אל תשתמש בזה למידע רגיש.</div>
+    <div class="note" id="dataNote">הנתונים נשמרים ב-Firebase (Firestore) בענן, בפרויקט הפרטי שלך. שיתוף לפי קוד בלבד — אין הרשאות משתמש אמיתיות ברמת השרת, אז אל תשתמש בזה למידע רגיש.</div>
   </div>
 </div>
 
@@ -493,7 +513,7 @@ async function doLogin(){
       msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget};
+    currentUser = {code:found.code, name:found.name, isAdmin:false, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
@@ -523,12 +543,23 @@ async function enterApp(){
     document.getElementById("userView").style.display = "none";
     renderRefList("");
     await renderAdminUserList();
+    switchAdminTab("manage");
+    const noteEl = document.getElementById("dataNote");
+    if(noteEl) noteEl.style.display = "block";
   }else{
     document.getElementById("adminView").style.display = "none";
     document.getElementById("userView").style.display = "block";
     currentTargets = calcPersonalTargets(currentUser);
     renderTargetBadges(currentTargets);
-    MEALS.forEach(buildMealSection);
+    MEALS.forEach(meal=>{
+      const wrapper = document.createElement("div");
+      wrapper.id = "tabwrap-" + meal.id;
+      document.getElementById("mealsContainer").appendChild(wrapper);
+      if(meal.id === "breakfast"){
+        wrapper.appendChild(buildSleepSection());
+      }
+      buildMealSection(meal, wrapper);
+    });
     buildActivitySection();
     try{
       currentLog = await fbGetUserLog(currentUser.code);
@@ -537,6 +568,8 @@ async function enterApp(){
     loadDate(currentDate);
     renderWeekSummary();
     switchTab(pickInitialTab());
+    const noteEl = document.getElementById("dataNote");
+    if(noteEl) noteEl.style.display = "none";
   }
 }
 
@@ -553,6 +586,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const stepsTarget = parseFloat(document.getElementById("newUserStepsTarget").value) || null;
   const runningTarget = parseFloat(document.getElementById("newUserRunningTarget").value) || null;
   const strengthWeeklyTarget = parseFloat(document.getElementById("newUserStrengthTarget").value) || null;
+  const sleepTarget = parseFloat(document.getElementById("newUserSleepTarget").value) || null;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
   if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -565,7 +599,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     }
     await fbAddUser(code, {name, height, weight, age,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
-      stepsTarget, runningTarget, strengthWeeklyTarget});
+      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget});
     document.getElementById("newUserName").value = "";
     document.getElementById("newUserCode").value = "";
     document.getElementById("newUserHeight").value = "";
@@ -574,6 +608,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     document.getElementById("newUserStepsTarget").value = "";
     document.getElementById("newUserRunningTarget").value = "";
     document.getElementById("newUserStrengthTarget").value = "";
+    document.getElementById("newUserSleepTarget").value = "";
     msg.style.color = "var(--teal)";
     msg.textContent = `נוצר בהצלחה! "${name}" — הקוד שלו: ${code}. שלח לו את הקוד הזה כדי שיוכל להיכנס.`;
     renderAdminUserList();
@@ -761,6 +796,98 @@ async function renderWeightLog(code, userData){
   }
 }
 
+function getOriginalWeight(weightEntries, fallback){
+  if(weightEntries && weightEntries.length){
+    const asc = [...weightEntries].sort((a,b)=> a.date < b.date ? -1 : 1);
+    return asc[0].weight;
+  }
+  return fallback || null;
+}
+
+function getLatestWeight(weightEntries, fallback){
+  if(weightEntries && weightEntries.length){
+    const asc = [...weightEntries].sort((a,b)=> a.date < b.date ? -1 : 1);
+    return asc[asc.length-1].weight;
+  }
+  return fallback || null;
+}
+
+function getRegistrationDate(userData, weightEntries){
+  if(userData && userData.createdAt) return userData.createdAt;
+  if(weightEntries && weightEntries.length){
+    const asc = [...weightEntries].sort((a,b)=> a.date < b.date ? -1 : 1);
+    return asc[0].date;
+  }
+  return todayStr();
+}
+
+function lastWeekOfPeriodWeight(entries, periodEnd, windowDays){
+  windowDays = windowDays || 7;
+  const windowStart = new Date(periodEnd);
+  windowStart.setDate(windowStart.getDate() - (windowDays-1));
+  const ws = fmtDate(windowStart);
+  const asc = [...(entries||[])].sort((a,b)=> a.date < b.date ? -1 : 1);
+  const within = asc.filter(e=> e.date >= ws && e.date <= periodEnd);
+  return within.length ? within[within.length-1].weight : null;
+}
+
+function pctColor(pct){
+  if(pct === null || pct === undefined) return null;
+  if(pct < 0) return "#b04a4a";
+  if(pct >= 85 && pct <= 115) return "#2e7d4f";
+  if((pct >= 70 && pct < 85) || (pct > 115 && pct <= 130)) return "#c77b2b";
+  return "#b04a4a";
+}
+
+function pctCell(pct){
+  if(pct === null || pct === undefined) return "—";
+  const color = pctColor(pct);
+  return `<span style="color:${color};font-weight:700;">${pct}%</span>`;
+}
+
+function weightColumnCell(periodKey, ctx){
+  const weeksSinceReg = Math.max(1, (new Date(todayStr()) - new Date(ctx.regDate)) / (7*86400000));
+  if(periodKey === "today"){
+    return ctx.currentWeight!=null ? `${ctx.currentWeight} ק"ג` : "—";
+  }
+  if(ctx.originalWeight == null || ctx.currentWeight == null) return "—";
+  if(periodKey === "week"){
+    const avgWeeklyLoss = (ctx.originalWeight - ctx.currentWeight) / weeksSinceReg;
+    return pctCell(Math.round((avgWeeklyLoss / WEEKLY_WEIGHT_LOSS_TARGET) * 100));
+  }
+  if(periodKey === "month"){
+    const monthsSinceReg = Math.max(1, weeksSinceReg/4.345);
+    const range = getCalendarRange("month");
+    const effEnd = range.end > todayStr() ? todayStr() : range.end;
+    const w = lastWeekOfPeriodWeight(ctx.weightEntries, effEnd);
+    const useW = (w!=null) ? w : ctx.currentWeight;
+    const avgLoss = (ctx.originalWeight - useW) / monthsSinceReg;
+    const target = WEEKLY_WEIGHT_LOSS_TARGET * 4.345;
+    return pctCell(Math.round((avgLoss/target)*100));
+  }
+  if(periodKey === "year"){
+    const yearsSinceReg = Math.max(1, weeksSinceReg/52);
+    const range = getCalendarRange("year");
+    const effEnd = range.end > todayStr() ? todayStr() : range.end;
+    const w = lastWeekOfPeriodWeight(ctx.weightEntries, effEnd);
+    const useW = (w!=null) ? w : ctx.currentWeight;
+    const avgLoss = (ctx.originalWeight - useW) / yearsSinceReg;
+    const target = WEEKLY_WEIGHT_LOSS_TARGET * 52;
+    return pctCell(Math.round((avgLoss/target)*100));
+  }
+  return "—";
+}
+
+function sleepPeriodAvg(log, startDate, endDate){
+  let sum=0, count=0;
+  Object.keys(log).forEach(d=>{
+    if(d >= startDate && d <= endDate && log[d].sleep && log[d].sleep.hours){
+      sum += log[d].sleep.hours; count++;
+    }
+  });
+  return count>0 ? sum/count : null;
+}
+
 async function showAdminUserPanel(code, label, userData){
   const panel = document.getElementById("adminUserPanel");
   panel.innerHTML = `<section><h2><span>${label}</span></h2><div style="padding:20px;color:var(--muted);">טוען...</div></section>`;
@@ -772,6 +899,10 @@ async function showAdminUserPanel(code, label, userData){
   try{ log = await fbGetUserLog(code); }catch(e){ /* ignore, treat as empty */ }
   let weightEntries = [];
   try{ weightEntries = await fbGetWeightLog(code); }catch(e){ /* ignore */ }
+
+  const originalWeight = getOriginalWeight(weightEntries, userData.weight);
+  const currentWeightVal = getLatestWeight(weightEntries, userData.weight);
+  const regDate = getRegistrationDate(userData, weightEntries);
 
   let weightRemainingHtml = "—";
   if(tw && userData.weight){
@@ -786,14 +917,14 @@ async function showAdminUserPanel(code, label, userData){
       <div id="userStatsView-${code}">
         <div class="stat-grid">
           <div class="stat-cell"><div class="stat-label">גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">משקל נוכחי</div><div class="stat-value">${userData.weight ? userData.weight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
         </div>
         ${pt.targetWeight ? `
         <div style="margin-top:14px;">
           <div class="stat-label" style="margin-bottom:6px;">עמידה ביעד (%, לפי תאריכים קלנדריים)</div>
-          ${periodPercentTable(log, pt, weightEntries, userData)}
+          ${periodPercentTable(log, pt, weightEntries, userData, {originalWeight, currentWeight:currentWeightVal, regDate})}
         </div>
         ` : ''}
         <div style="margin-top:14px;display:flex;gap:8px;">
@@ -817,6 +948,10 @@ async function showAdminUserPanel(code, label, userData){
           <input type="number" id="editRunningTarget-${code}" placeholder="יעד ק״מ יומי" value="${userData.runningTarget||''}" step="0.5" style="width:130px;">
           <label><input type="checkbox" id="editActStrength-${code}" ${userData.activities && userData.activities.strength ? 'checked':''}> אימון כוח</label>
           <input type="number" id="editStrengthTarget-${code}" placeholder="יעד אימונים לשבוע" value="${userData.strengthWeeklyTarget||''}" style="width:150px;">
+        </div>
+        <div class="activity-toggle-row">
+          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
+          <input type="number" id="editSleepTarget-${code}" placeholder="יעד שעות שינה" value="${userData.sleepTarget||''}" step="0.5" style="width:140px;">
         </div>
         <div style="margin-top:8px;display:flex;gap:8px;">
           <button class="addrow" id="saveEditBtn-${code}">💾 שמור שינויים</button>
@@ -875,8 +1010,9 @@ async function showAdminUserPanel(code, label, userData){
     const newStepsTarget = parseFloat(document.getElementById(`editStepsTarget-${code}`).value) || null;
     const newRunningTarget = parseFloat(document.getElementById(`editRunningTarget-${code}`).value) || null;
     const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
+    const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget};
+    const payload = {name:newName, height:newHeight, weight:newWeight, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
@@ -1043,7 +1179,7 @@ function activityPeriodValue(log, type, startDate, endDate){
   return count>0 ? sum/count : null;
 }
 
-function periodPercentTable(log, pt, weightEntries, userData){
+function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
   const periods = [
     {key:"today", label:"יומי"},
     {key:"week", label:"שבועי"},
@@ -1052,10 +1188,12 @@ function periodPercentTable(log, pt, weightEntries, userData){
   ];
   const primaryAct = getPrimaryActivity(userData || {});
   const hasWeightData = weightEntries && weightEntries.length > 0;
+  const hasSleepTarget = !!(userData && userData.sleepTarget);
 
   const headCells = ["", "קלוריות", "חלבון", "שומן", "פחמימה"];
   if(hasWeightData) headCells.push("משקל");
   if(primaryAct) headCells.push(primaryAct.label);
+  if(hasSleepTarget) headCells.push("שינה");
 
   const rows = periods.map(per=>{
     let stats, range;
@@ -1073,15 +1211,12 @@ function periodPercentTable(log, pt, weightEntries, userData){
       cells = `<td colspan="4" style="color:var(--muted);font-size:.82rem;">אין נתונים</td>`;
     }else{
       const pk = pctOf(stats.kcal, pt.kcal), pp = pctOf(stats.p, pt.p), pf = pctOf(stats.f, pt.f), pc = pctOf(stats.c, pt.c);
-      cells = `<td>${pk!==null?pk+'%':'—'}</td><td>${pp!==null?pp+'%':'—'}</td><td>${pf!==null?pf+'%':'—'}</td><td>${pc!==null?pc+'%':'—'}</td>`;
+      cells = `<td>${pctCell(pk)}</td><td>${pctCell(pp)}</td><td>${pctCell(pf)}</td><td>${pctCell(pc)}</td>`;
     }
 
     if(hasWeightData){
-      const days = periodDayCount(per.key);
-      const expectedLoss = (WEEKLY_WEIGHT_LOSS_TARGET/7) * days;
-      const actualLoss = weightPeriodChange(weightEntries, range.start, range.end);
-      const wPct = (actualLoss !== null && expectedLoss > 0) ? Math.round((actualLoss/expectedLoss)*100) : null;
-      cells += `<td>${wPct!==null ? wPct+'%' : '—'}</td>`;
+      const cellText = weightColumnCell(per.key, weightCtx);
+      cells += `<td>${cellText}</td>`;
     }
 
     if(primaryAct){
@@ -1095,7 +1230,13 @@ function periodPercentTable(log, pt, weightEntries, userData){
         const avg = activityPeriodValue(log, primaryAct.type, range.start, range.end);
         actPct = (avg !== null && primaryAct.target) ? Math.round((avg/primaryAct.target)*100) : null;
       }
-      cells += `<td>${actPct!==null ? actPct+'%' : '—'}</td>`;
+      cells += `<td>${pctCell(actPct)}</td>`;
+    }
+
+    if(hasSleepTarget){
+      const avgSleep = sleepPeriodAvg(log, range.start, range.end);
+      const sleepPct = (avgSleep !== null) ? Math.round((avgSleep/userData.sleepTarget)*100) : null;
+      cells += `<td>${pctCell(sleepPct)}</td>`;
     }
 
     return `<tr><td class="stat-period-label">${per.label}</td>${cells}</tr>`;
@@ -1127,10 +1268,10 @@ function foodOptions(selectedName){
 }
 
 const TAB_PANELS = {
-  breakfast: "sec-breakfast",
-  lunch: "sec-lunch",
-  dinner: "sec-dinner",
-  extra: "sec-extra",
+  breakfast: "tabwrap-breakfast",
+  lunch: "tabwrap-lunch",
+  dinner: "tabwrap-dinner",
+  extra: "tabwrap-extra",
   activity: "activitySection",
   week: "weekSummarySection",
 };
@@ -1205,15 +1346,35 @@ function switchTab(tabId){
     const el = document.getElementById(TAB_PANELS[key]);
     if(el) el.style.display = (key === tabId) ? "block" : "none";
   });
-  document.querySelectorAll(".tab-btn").forEach(btn=>{
+  document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
     btn.classList.toggle("active", btn.dataset.tab === tabId);
   });
   const greetEl = document.getElementById("greetingBanner");
   if(greetEl) greetEl.textContent = GREETINGS[tabId] || "";
 }
 
-document.querySelectorAll(".tab-btn").forEach(btn=>{
+document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
   btn.addEventListener("click", ()=> switchTab(btn.dataset.tab));
+});
+
+const ADMIN_TAB_PANELS = {
+  manage: "adminPanel-manage",
+  foods: "adminPanel-foods",
+  addUser: "adminPanel-addUser",
+};
+
+function switchAdminTab(tabId){
+  Object.keys(ADMIN_TAB_PANELS).forEach(key=>{
+    const el = document.getElementById(ADMIN_TAB_PANELS[key]);
+    if(el) el.style.display = (key === tabId) ? "block" : "none";
+  });
+  document.querySelectorAll(".tab-btn[data-atab]").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.atab === tabId);
+  });
+}
+
+document.querySelectorAll(".tab-btn[data-atab]").forEach(btn=>{
+  btn.addEventListener("click", ()=> switchAdminTab(btn.dataset.atab));
 });
 
 function updateTabIndicators(){
@@ -1226,6 +1387,58 @@ function updateTabIndicators(){
   const hasAct = dayData.activities && Object.keys(dayData.activities).length > 0;
   const actBtn = document.querySelector('.tab-btn[data-tab="activity"]');
   if(actBtn) actBtn.classList.toggle("filled", hasAct);
+}
+
+function computeSleepHours(bedtime, wake){
+  if(!bedtime || !wake) return null;
+  const [bh, bm] = bedtime.split(":").map(Number);
+  const [wh, wm] = wake.split(":").map(Number);
+  let startMin = bh*60 + bm;
+  let endMin = wh*60 + wm;
+  if(endMin <= startMin) endMin += 24*60; // overnight wrap
+  return Math.round(((endMin-startMin)/60)*10)/10;
+}
+
+function buildSleepSection(){
+  const section = document.createElement("section");
+  section.innerHTML = `
+    <h2 style="background:var(--dark);"><span>🛏️ שינה</span><span class="meal-total" id="sleepDurationLabel">— שעות</span></h2>
+    <div style="padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
+      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת שינה</label><input type="time" id="sleepBedtime"></div>
+      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת השכמה</label><input type="time" id="sleepWake"></div>
+    </div>
+  `;
+  section.querySelector("#sleepBedtime").addEventListener("change", onSleepInputChange);
+  section.querySelector("#sleepWake").addEventListener("change", onSleepInputChange);
+  return section;
+}
+
+function onSleepInputChange(){
+  const bedtime = (document.getElementById("sleepBedtime")||{}).value;
+  const wake = (document.getElementById("sleepWake")||{}).value;
+  const hours = computeSleepHours(bedtime, wake);
+  const lbl = document.getElementById("sleepDurationLabel");
+  if(lbl) lbl.textContent = hours!==null ? `${hours} שעות` : "— שעות";
+  recalcDaily();
+}
+
+function loadSleepData(sleepData){
+  sleepData = sleepData || {};
+  const bEl = document.getElementById("sleepBedtime");
+  const wEl = document.getElementById("sleepWake");
+  if(bEl) bEl.value = sleepData.bedtime || "";
+  if(wEl) wEl.value = sleepData.wake || "";
+  const hours = computeSleepHours(sleepData.bedtime, sleepData.wake);
+  const lbl = document.getElementById("sleepDurationLabel");
+  if(lbl) lbl.textContent = hours!==null ? `${hours} שעות` : "— שעות";
+}
+
+function collectSleepData(){
+  const bedtime = (document.getElementById("sleepBedtime")||{}).value;
+  const wake = (document.getElementById("sleepWake")||{}).value;
+  if(!bedtime || !wake) return {};
+  const hours = computeSleepHours(bedtime, wake);
+  return {bedtime, wake, hours};
 }
 
 function buildActivitySection(){
@@ -1302,8 +1515,8 @@ function collectActivityData(){
   return act;
 }
 
-function buildMealSection(meal){
-  const container = document.getElementById("mealsContainer");
+function buildMealSection(meal, targetContainer){
+  const container = targetContainer || document.getElementById("mealsContainer");
   const section = document.createElement("section");
   section.id = "sec-" + meal.id;
   section.innerHTML = `
@@ -1397,10 +1610,10 @@ function renderTargetBadges(targets){
   }
   el.innerHTML = `
     ${twBadge}
-    <div class="badge"><div class="num">${targets.c} גר'</div><div class="lbl">פחמימה (יעד)</div></div>
-    <div class="badge"><div class="num">${targets.f} גר'</div><div class="lbl">שומן (יעד)</div></div>
-    <div class="badge"><div class="num">${targets.p} גר'</div><div class="lbl">חלבון (יעד)</div></div>
-    <div class="badge"><div class="num">${targets.kcal}</div><div class="lbl">קלוריות (יעד)</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.c)} גר'</div><div class="lbl">פחמימה (יעד)</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.f)} גר'</div><div class="lbl">שומן (יעד)</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.p)} גר'</div><div class="lbl">חלבון (יעד)</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.kcal)}</div><div class="lbl">קלוריות (יעד)</div></div>
   `;
 }
 
@@ -1418,6 +1631,12 @@ function recalcDaily(){
     {val:f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
     {val:c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
   ];
+  if(currentUser && currentUser.sleepTarget){
+    const bEl = document.getElementById("sleepBedtime");
+    const wEl = document.getElementById("sleepWake");
+    const hours = (bEl && wEl) ? computeSleepHours(bEl.value, wEl.value) : null;
+    cards.push({val:(hours||0), target:currentUser.sleepTarget, label:"שינה", unit:" שעות", dec:1});
+  }
   if(currentUser && currentUser.activities){
     const acts = currentUser.activities;
     if(acts.steps){
@@ -1441,10 +1660,12 @@ function recalcDaily(){
       return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
     }
     if(cd.target){
-      const pct = Math.min(100, (cd.val/cd.target)*100);
+      const rawPct = (cd.val/cd.target)*100;
+      const pct = Math.min(100, rawPct);
+      const barColor = pctColor(Math.round(rawPct)) || "var(--accent)";
       const delta = cd.val - cd.target;
       const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
-      return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><div class="delta">${deltaTxt}</div></div>`;
+      return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
     }
     return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
   }).join("");
@@ -1481,6 +1702,7 @@ function loadDate(dateStr){
     recalcMeal(meal.id);
   });
   loadActivityData(dayData.activities);
+  loadSleepData(dayData.sleep);
   recalcDaily();
   updateTabIndicators();
   document.getElementById("saveStatus").textContent = "";
@@ -1510,6 +1732,7 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const dayData = {};
   MEALS.forEach(meal=>{ dayData[meal.id] = collectMealData(meal.id); });
   dayData.activities = collectActivityData();
+  dayData.sleep = collectSleepData();
   currentLog[currentDate] = dayData;
   try{
     await fbSaveDay(currentUser.code, currentDate, dayData);
