@@ -287,7 +287,7 @@
         <button class="tab-btn" data-tab="week" style="--tabColor:var(--dark);">📊 סיכום שבועי</button>
       </div>
 
-      <div class="sub" style="font-size:.85rem;color:var(--accent);font-weight:600;">
+      <div class="sub" id="instructionText" style="font-size:.85rem;color:var(--accent);font-weight:600;">
         👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.
       </div>
 
@@ -298,7 +298,7 @@
       <div id="weekSummarySection" style="display:none;"></div>
 
       <div class="daily-total" id="persistentDailyTotal">
-        <h2>סה"כ יומי</h2>
+        <h2 id="dailyTotalTitle">סה"כ יומי</h2>
         <div class="dt-grid" id="dailyTotals"></div>
       </div>
     </div>
@@ -376,6 +376,27 @@ const I18N = {
 function t(key){
   const lang = (currentUser && currentUser.language) || "he";
   return (I18N[lang] && I18N[lang][key]) || I18N.he[key] || key;
+}
+
+function applyStaticTranslations(){
+  const lang = (currentUser && currentUser.language) || "he";
+  const isEn = lang === "en";
+  document.getElementById("appArea").dir = isEn ? "ltr" : "rtl";
+  document.getElementById("appArea").lang = isEn ? "en" : "he";
+
+  const setText = (id, key) => { const el = document.getElementById(id); if(el) el.textContent = t(key); };
+  setText("prevDay", "prevDay");
+  setText("nextDay", "nextDay");
+  setText("saveBtn", "saveDay");
+  setText("instructionText", "instructionText");
+  setText("dailyTotalTitle", "dailyTotalTitle");
+  setText("logoutBtn", "logout");
+
+  const tabMap = {breakfast:"tabBreakfast", lunch:"tabLunch", dinner:"tabDinner", extra:"tabExtra", activity:"tabActivity", week:"tabWeek"};
+  Object.keys(tabMap).forEach(tabId=>{
+    const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if(btn) btn.textContent = t(tabMap[tabId]);
+  });
 }
 
 const TARGETS_DEFAULT = {kcal:2200, p:155, f:65, c:210};
@@ -537,7 +558,11 @@ const MEALS = [
   {id:"extra", title:"ארוחה נוספת / חטיף", rows:4, color:"var(--extra)"},
 ];
 
+const MEAL_TITLE_KEYS = {breakfast:"mealBreakfast", lunch:"mealLunch", dinner:"mealDinner", extra:"mealExtra"};
+function getMealTitle(mealId){ return t(MEAL_TITLE_KEYS[mealId] || mealId); }
+
 let currentUser = null;
+let heartbeatInterval = null;
 let currentDate = todayStr();
 let currentLog = {};
 
@@ -569,6 +594,9 @@ async function fbAddUser(code, data){
 }
 async function fbUpdateUser(code, data){
   await db.collection("users").doc(code).update(data);
+}
+async function fbHeartbeat(code){
+  try{ await db.collection("users").doc(code).update({lastActive: Date.now()}); }catch(e){ /* ignore */ }
 }
 async function fbDeleteUser(code){
   await db.collection("users").doc(code).delete();
@@ -661,6 +689,7 @@ async function doLogin(){
 
 document.getElementById("logoutBtn").addEventListener("click", ()=>{
   currentUser = null;
+  if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; }
   document.getElementById("appArea").style.display = "none";
   document.getElementById("loginGate").style.display = "block";
   document.getElementById("codeInput").value = "";
@@ -670,7 +699,7 @@ document.getElementById("logoutBtn").addEventListener("click", ()=>{
 async function enterApp(){
   document.getElementById("loginGate").style.display = "none";
   document.getElementById("appArea").style.display = "block";
-  document.getElementById("whoLabel").textContent = currentUser.isAdmin ? "מנהל" : ("שלום, " + currentUser.name);
+  document.getElementById("whoLabel").textContent = currentUser.isAdmin ? "מנהל" : (t("hello") + ", " + currentUser.name);
 
   try{
     FOODS = await fbGetAllFoods();
@@ -684,9 +713,12 @@ async function enterApp(){
     switchAdminTab("manage");
     const noteEl = document.getElementById("dataNote");
     if(noteEl) noteEl.style.display = "block";
+    if(heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(()=> renderAdminUserList(), 30000);
   }else{
     document.getElementById("adminView").style.display = "none";
     document.getElementById("userView").style.display = "block";
+    applyStaticTranslations();
     currentTargets = calcPersonalTargets(currentUser);
     renderTargetBadges(currentTargets);
     MEALS.forEach(meal=>{
@@ -715,6 +747,9 @@ async function enterApp(){
     switchTab(pickInitialTab());
     const noteEl = document.getElementById("dataNote");
     if(noteEl) noteEl.style.display = "none";
+    fbHeartbeat(currentUser.code);
+    if(heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(()=> fbHeartbeat(currentUser.code), 30000);
   }
 }
 
@@ -884,6 +919,8 @@ document.getElementById("exportAllCsvBtn").addEventListener("click", async ()=>{
   }
 });
 
+const ONLINE_THRESHOLD_MS = 90000; // 90 seconds — matches the 30s heartbeat interval with buffer
+
 async function renderAdminUserList(){
   const list = document.getElementById("adminUserList");
   list.innerHTML = `<div style="color:var(--muted);font-size:.85rem;">טוען...</div>`;
@@ -896,7 +933,9 @@ async function renderAdminUserList(){
     list.innerHTML = users.map(u=>{
       const daysInfo = daysSinceLabel(u.lastWeightDate);
       const blockedTag = u.blocked ? `<span style="font-size:.72rem;font-weight:700;color:#b04a4a;"> 🚫 חסום</span>` : "";
-      return `<div class="admin-user-chip" data-code="${u.code}" style="${u.blocked ? 'opacity:.6;' : ''}">${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span> <span style="font-size:.72rem;font-weight:600;color:${daysInfo.color};">${daysInfo.text}</span>${blockedTag}</div>`;
+      const isOnline = u.lastActive && (Date.now() - u.lastActive) < ONLINE_THRESHOLD_MS;
+      const statusDot = `<span title="${isOnline ? 'מחובר כרגע' : 'לא מחובר'}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${isOnline ? '#2e7d4f' : '#b04a4a'};margin-left:6px;"></span>`;
+      return `<div class="admin-user-chip" data-code="${u.code}" style="${u.blocked ? 'opacity:.6;' : ''}">${statusDot}${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span> <span style="font-size:.72rem;font-weight:600;color:${daysInfo.color};">${daysInfo.text}</span>${blockedTag}</div>`;
     }).join("");
     list.querySelectorAll(".admin-user-chip").forEach(chip=>{
       chip.addEventListener("click", ()=>{
@@ -1500,7 +1539,7 @@ function dayTotals(dayData){
 
 // ---------------- User tracker UI ----------------
 function foodOptions(selectedName){
-  let html = `<option value="">— בחר מזון —</option>`;
+  let html = `<option value="">${t("selectFood")}</option>`;
   const sorted = [...FOODS].sort((a,b)=>a.n.localeCompare(b.n,'he'));
   sorted.forEach(f=>{
     html += `<option value="${f.n}" ${f.n===selectedName?'selected':''}>${f.n}</option>`;
@@ -1517,13 +1556,13 @@ const TAB_PANELS = {
   week: "weekSummarySection",
 };
 
-const GREETINGS = {
-  breakfast: "🌅 בוקר טוב! זמן ארוחת הבוקר",
-  lunch: "☀️ בתיאבון! זמן ארוחת הצהריים",
-  dinner: "🌙 ערב טוב! זמן ארוחת הערב",
-  extra: "🍪 תיעוד חטיף / ארוחה נוספת",
-  activity: "💪 זמן טוב לתעד אימון",
-  week: "📊 איך עבר עליך השבוע",
+const GREETING_KEYS = {
+  breakfast: "greetBreakfast",
+  lunch: "greetLunch",
+  dinner: "greetDinner",
+  extra: "greetExtra",
+  activity: "greetActivity",
+  week: "greetWeek",
 };
 
 function renderWeekSummary(){
@@ -1536,17 +1575,17 @@ function renderWeekSummary(){
   if(!stats){
     container.innerHTML = `
       <div class="daily-total">
-        <h2>📊 סיכום שבועי <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel}</span></h2>
-        <div style="padding:10px 4px;color:#cfe0da;font-size:.9rem;">אין עדיין נתונים לשבוע הנוכחי.</div>
+        <h2>${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel}</span></h2>
+        <div style="padding:10px 4px;color:#cfe0da;font-size:.9rem;">${t("weekNoData")}</div>
       </div>`;
     return;
   }
 
   const cards = [
-    {val:stats.kcal, target:currentTargets.kcal, label:"קלוריות (ממוצע יומי)", unit:"", dec:0},
-    {val:stats.f, target:currentTargets.f, label:"שומן (ממוצע יומי)", unit:" גר'", dec:1},
-    {val:stats.c, target:currentTargets.c, label:"פחמימה (ממוצע יומי)", unit:" גר'", dec:1},
-    {val:stats.p, target:currentTargets.p, label:"חלבון (ממוצע יומי)", unit:" גר'", dec:1},
+    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
+    {val:stats.f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
   ];
 
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
@@ -1559,32 +1598,32 @@ function renderWeekSummary(){
     const acts = currentUser.activities;
     if(acts.steps){
       const avg = activityPeriodValue(currentLog, "steps", range.start, range.end);
-      cards.push({val: avg||0, target: currentUser.stepsTarget||null, label:"צעדים (ממוצע יומי)", unit:"", dec:0});
+      cards.push({val: avg||0, target: currentUser.stepsTarget||null, label:t("labelSteps") + t("avgDaily"), unit:"", dec:0});
     }
     if(acts.running){
       const avg = activityPeriodValue(currentLog, "running", range.start, range.end);
-      cards.push({val: avg||0, target: currentUser.runningTarget||null, label:"ריצה (ממוצע יומי)", unit:" ק\"מ", dec:1});
+      cards.push({val: avg||0, target: currentUser.runningTarget||null, label:t("labelRunning") + t("avgDaily"), unit:` ${t("unitKm")}`, dec:1});
     }
     if(acts.strength){
       const sessions = activityPeriodValue(currentLog, "strength", range.start, range.end);
       if(currentUser.strengthWeeklyTarget){
-        cards.push({val: sessions, target: currentUser.strengthWeeklyTarget, label:"אימוני כוח השבוע", unit:"", dec:0});
+        cards.push({val: sessions, target: currentUser.strengthWeeklyTarget, label:t("strengthWeekSessions"), unit:"", dec:0});
       }else{
-        cards.push({text: `${sessions} אימונים השבוע`, label:"אימון כוח"});
+        cards.push({text: `${sessions} ${t("strengthWeekSimple")}`, label:t("labelStrength")});
       }
     }
   }
 
   if(currentUser && currentUser.sleepTarget){
     const avgSleep = sleepPeriodAvg(currentLog, range.start, range.end);
-    cards.push({val: avgSleep||0, target: currentUser.sleepTarget, label:"שינה (ממוצע יומי)", unit:" שעות", dec:1});
+    cards.push({val: avgSleep||0, target: currentUser.sleepTarget, label:t("labelSleep") + t("avgDaily"), unit:` ${t("unitHours")}`, dec:1});
   }
 
   const cardsHtml = cards.map(cardHTML).join("");
 
   container.innerHTML = `
     <div class="daily-total">
-      <h2>📊 סיכום שבועי <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel} · ${stats.days} ${stats.days===1?'יום':'ימים'} עם נתונים</span></h2>
+      <h2>${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel} · ${stats.days} ${stats.days===1?t("day"):t("days")} ${t("daysWithData")}</span></h2>
       <div class="dt-grid">${cardsHtml}</div>
     </div>
   `;
@@ -1609,7 +1648,7 @@ function switchTab(tabId){
     btn.classList.toggle("active", btn.dataset.tab === tabId);
   });
   const greetEl = document.getElementById("greetingBanner");
-  if(greetEl) greetEl.textContent = GREETINGS[tabId] || "";
+  if(greetEl) greetEl.textContent = GREETING_KEYS[tabId] ? t(GREETING_KEYS[tabId]) : "";
   const persistentDT = document.getElementById("persistentDailyTotal");
   if(persistentDT) persistentDT.style.display = (tabId === "week") ? "none" : "block";
 }
@@ -1663,10 +1702,10 @@ function computeSleepHours(bedtime, wake){
 function buildSleepSection(){
   const section = document.createElement("section");
   section.innerHTML = `
-    <h2 style="background:var(--dark);"><span>🛏️ שינה</span><span class="meal-total" id="sleepDurationLabel">— שעות</span></h2>
+    <h2 style="background:var(--dark);"><span>${t("sleepTitle")}</span><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span></h2>
     <div style="padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
-      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת שינה</label><input type="time" id="sleepBedtime"></div>
-      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">שעת השכמה</label><input type="time" id="sleepWake"><span id="sleepWakeComputed" style="font-size:.78rem;color:var(--teal);font-weight:600;margin-right:8px;"></span></div>
+      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepBedtime")}</label><input type="time" id="sleepBedtime"></div>
+      <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepWake")}</label><input type="time" id="sleepWake"><span id="sleepWakeComputed" style="font-size:.78rem;color:var(--teal);font-weight:600;margin-right:8px;"></span></div>
     </div>
   `;
   section.querySelector("#sleepBedtime").addEventListener("change", onSleepInputChange);
@@ -1676,9 +1715,9 @@ function buildSleepSection(){
 
 function updateSleepDisplays(hours){
   const lbl = document.getElementById("sleepDurationLabel");
-  if(lbl) lbl.textContent = hours!==null ? `${hours} שעות` : "— שעות";
+  if(lbl) lbl.textContent = hours!==null ? `${hours} ${t("unitHours")}` : t("sleepDefault");
   const wc = document.getElementById("sleepWakeComputed");
-  if(wc) wc.textContent = hours!==null ? `(${hours} שעות שינה)` : "";
+  if(wc) wc.textContent = hours!==null ? `(${hours} ${t("sleepHoursLabel")})` : "";
 }
 
 function onSleepInputChange(){
@@ -1712,35 +1751,35 @@ function buildActivitySection(){
   if(!container) return;
   const acts = (currentUser && currentUser.activities) || {};
   if(!acts.steps && !acts.running && !acts.strength){
-    container.innerHTML = `<section><h2 style="background:var(--accent);"><span>🏋️ אימון</span></h2>
-      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.9rem;">אין פעילויות מוגדרות עבורך כרגע. פנה למנהל כדי להפעיל מעקב אימונים.</div>
+    container.innerHTML = `<section><h2 style="background:var(--accent);"><span>${t("activityTitle")}</span></h2>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.9rem;">${t("noActivities")}</div>
     </section>`;
     return;
   }
   let rows = "";
   if(acts.steps){
     rows += `<tr>
-      <td>🚶 צעדים</td>
-      <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="כמות צעדים"></td>
+      <td>${t("actSteps")}</td>
+      <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="${t("phSteps")}"></td>
     </tr>`;
   }
   if(acts.running){
     rows += `<tr>
-      <td>🏃 ריצה</td>
-      <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="ק״מ"></td>
+      <td>${t("actRunning")}</td>
+      <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="${t("phKm")}"></td>
     </tr>`;
   }
   if(acts.strength){
     rows += `<tr>
-      <td>🏋️ אימון כוח</td>
-      <td><label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.9rem;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> התאמנתי היום</label></td>
+      <td>${t("actStrength")}</td>
+      <td><label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.9rem;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> ${t("trainedToday")}</label></td>
     </tr>`;
   }
   container.innerHTML = `
     <section>
-      <h2 style="background:var(--accent);"><span>🏋️ אימון</span></h2>
+      <h2 style="background:var(--accent);"><span>${t("activityTitle")}</span></h2>
       <table>
-        <thead><tr><th style="width:35%">פעילות</th><th>כמות / מרחק</th></tr></thead>
+        <thead><tr><th style="width:35%">${t("colActivity")}</th><th>${t("colAmount")}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </section>
@@ -1785,14 +1824,15 @@ function buildMealSection(meal, targetContainer){
   const container = targetContainer || document.getElementById("mealsContainer");
   const section = document.createElement("section");
   section.id = "sec-" + meal.id;
+  const mealTitle = getMealTitle(meal.id);
   section.innerHTML = `
-    <h2 style="background:${meal.color}"><span>${meal.title}</span><span class="meal-total" id="total-${meal.id}">0 קק"ל</span></h2>
+    <h2 style="background:${meal.color}"><span>${mealTitle}</span><span class="meal-total" id="total-${meal.id}">0 ${t("colKcal")}</span></h2>
     <table>
-      <thead><tr><th style="width:30%">מזון</th><th style="width:12%">כמות (גר')</th><th style="width:12%">קלוריות</th><th style="width:12%">חלבון</th><th style="width:12%">שומן</th><th style="width:12%">פחמימה</th><th style="width:6%"></th></tr></thead>
+      <thead><tr><th style="width:30%">${t("colFood")}</th><th style="width:12%">${t("colQty")}</th><th style="width:12%">${t("colKcal")}</th><th style="width:12%">${t("colProtein")}</th><th style="width:12%">${t("colFat")}</th><th style="width:12%">${t("colCarb")}</th><th style="width:6%"></th></tr></thead>
       <tbody id="body-${meal.id}"></tbody>
-      <tfoot><tr class="subtotal-row"><td colspan="2">סה"כ ל${meal.title}</td><td id="sum-kcal-${meal.id}">0</td><td id="sum-p-${meal.id}">0</td><td id="sum-f-${meal.id}">0</td><td id="sum-c-${meal.id}">0</td><td></td></tr></tfoot>
+      <tfoot><tr class="subtotal-row"><td colspan="2">${t("totalFor")}${mealTitle}</td><td id="sum-kcal-${meal.id}">0</td><td id="sum-p-${meal.id}">0</td><td id="sum-f-${meal.id}">0</td><td id="sum-c-${meal.id}">0</td><td></td></tr></tfoot>
     </table>
-    <div class="row-actions"><button class="addrow" data-meal="${meal.id}">+ הוסף שורה</button></div>
+    <div class="row-actions"><button class="addrow" data-meal="${meal.id}">${t("addRow")}</button></div>
   `;
   container.appendChild(section);
   const body = section.querySelector(`#body-${meal.id}`);
@@ -1858,7 +1898,7 @@ function recalcMeal(mealId){
   document.getElementById(`sum-p-${mealId}`).textContent = p.toFixed(1);
   document.getElementById(`sum-f-${mealId}`).textContent = f.toFixed(1);
   document.getElementById(`sum-c-${mealId}`).textContent = c.toFixed(1);
-  document.getElementById(`total-${mealId}`).textContent = kcal.toFixed(0) + ' קק"ל';
+  document.getElementById(`total-${mealId}`).textContent = kcal.toFixed(0) + ' ' + t("colKcal");
 }
 
 function renderTargetBadges(targets){
@@ -1868,18 +1908,18 @@ function renderTargetBadges(targets){
   if(targets.targetWeight && targets.currentWeight){
     const diff = Math.round((targets.currentWeight - targets.targetWeight)*10)/10;
     let valText;
-    if(Math.abs(diff) < 0.3) valText = "🎉 הושג";
-    else if(diff > 0) valText = `${diff} ק"ג`;
-    else valText = `${Math.abs(diff)} ק"ג`;
-    const lblText = Math.abs(diff) < 0.3 ? "יעד משקל" : (diff > 0 ? "נותר להורדה" : "נותר להעלאה");
+    if(Math.abs(diff) < 0.3) valText = t("weightAchieved");
+    else if(diff > 0) valText = `${diff} ${t("unitKg")}`;
+    else valText = `${Math.abs(diff)} ${t("unitKg")}`;
+    const lblText = Math.abs(diff) < 0.3 ? t("labelWeightGoalReached") : (diff > 0 ? t("labelWeightRemainLoss") : t("labelWeightRemainGain"));
     twBadge = `<div class="badge"><div class="num">${valText}</div><div class="lbl">${lblText}</div></div>`;
   }
   el.innerHTML = `
     ${twBadge}
-    <div class="badge"><div class="num">${Math.round(targets.c)} גר'</div><div class="lbl">פחמימה (יעד)</div></div>
-    <div class="badge"><div class="num">${Math.round(targets.f)} גר'</div><div class="lbl">שומן (יעד)</div></div>
-    <div class="badge"><div class="num">${Math.round(targets.p)} גר'</div><div class="lbl">חלבון (יעד)</div></div>
-    <div class="badge"><div class="num">${Math.round(targets.kcal)}</div><div class="lbl">קלוריות (יעד)</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.c)} ${t("unitG")}</div><div class="lbl">${t("labelCarb")}</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.f)} ${t("unitG")}</div><div class="lbl">${t("labelFat")}</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.p)} ${t("unitG")}</div><div class="lbl">${t("labelProtein")}</div></div>
+    <div class="badge"><div class="num">${Math.round(targets.kcal)}</div><div class="lbl">${t("labelKcal")}</div></div>
   `;
 }
 
@@ -1887,7 +1927,7 @@ function cardHTML(cd){
   if(cd.special === "weightJourney"){
     const clamped = Math.max(0, Math.min(100, cd.pct));
     const barColor = pctColor(Math.round(cd.pct)) || "var(--accent)";
-    return `<div class="dt-card"><div class="lbl">התקדמות למשקל יעד</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
+    return `<div class="dt-card"><div class="lbl">${t("weightJourneyLabel")}</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
   }
   if(cd.text !== undefined){
     return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
@@ -1897,7 +1937,7 @@ function cardHTML(cd){
     const pct = Math.min(100, rawPct);
     const barColor = pctColor(Math.round(rawPct)) || "var(--accent)";
     const delta = cd.val - cd.target;
-    const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} מעל היעד` : `${Math.abs(delta).toFixed(0)}${cd.unit} מתחת ליעד`;
+    const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} ${t("overTarget")}` : `${Math.abs(delta).toFixed(0)}${cd.unit} ${t("underTarget")}`;
     return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
   }
   return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
@@ -1912,10 +1952,10 @@ function recalcDaily(){
     c += parseFloat(document.getElementById(`sum-c-${m.id}`).textContent)||0;
   });
   const cards = [
-    {val:kcal, target:currentTargets.kcal, label:"קלוריות", unit:"", dec:0},
-    {val:f, target:currentTargets.f, label:"שומן", unit:" גר'", dec:1},
-    {val:c, target:currentTargets.c, label:"פחמימה", unit:" גר'", dec:1},
-    {val:p, target:currentTargets.p, label:"חלבון", unit:" גר'", dec:1},
+    {val:kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,""), unit:"", dec:0},
+    {val:f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1},
+    {val:c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1},
+    {val:p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1},
   ];
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
     const denom = currentUser.originalWeight - currentUser.targetWeightVal;
@@ -1927,24 +1967,24 @@ function recalcDaily(){
     if(acts.steps){
       const el = document.getElementById("actStepsCount");
       const v = el ? (parseFloat(el.value)||0) : 0;
-      cards.push({val:v, target:currentUser.stepsTarget||null, label:"צעדים", unit:"", dec:0});
+      cards.push({val:v, target:currentUser.stepsTarget||null, label:t("labelSteps"), unit:"", dec:0});
     }
     if(acts.running){
       const el = document.getElementById("actRunningDistance");
       const v = el ? (parseFloat(el.value)||0) : 0;
-      cards.push({val:v, target:currentUser.runningTarget||null, label:"ריצה", unit:" ק\"מ", dec:1});
+      cards.push({val:v, target:currentUser.runningTarget||null, label:t("labelRunning"), unit:` ${t("unitKm")}`, dec:1});
     }
     if(acts.strength){
       const el = document.getElementById("actStrengthDone");
       const done = el ? el.checked : false;
-      cards.push({text: done ? "✓ בוצע היום" : "לא בוצע היום", label:"אימון כוח"});
+      cards.push({text: done ? t("doneToday") : t("notDoneToday"), label:t("labelStrength")});
     }
   }
   if(currentUser && currentUser.sleepTarget){
     const bEl = document.getElementById("sleepBedtime");
     const wEl = document.getElementById("sleepWake");
     const hours = (bEl && wEl) ? computeSleepHours(bEl.value, wEl.value) : null;
-    cards.push({val:(hours||0), target:currentUser.sleepTarget, label:"שינה", unit:" שעות", dec:1});
+    cards.push({val:(hours||0), target:currentUser.sleepTarget, label:t("labelSleep"), unit:` ${t("unitHours")}`, dec:1});
   }
   document.getElementById("dailyTotals").innerHTML = cards.map(cardHTML).join("");
 }
@@ -2005,7 +2045,7 @@ document.getElementById("nextDay").addEventListener("click", ()=>{
 
 document.getElementById("saveBtn").addEventListener("click", async ()=>{
   const status = document.getElementById("saveStatus");
-  status.textContent = "שומר...";
+  status.textContent = t("saving");
   status.style.color = "var(--teal)";
   const dayData = {};
   MEALS.forEach(meal=>{ dayData[meal.id] = collectMealData(meal.id); });
@@ -2014,13 +2054,13 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
   currentLog[currentDate] = dayData;
   try{
     await fbSaveDay(currentUser.code, currentDate, dayData);
-    status.textContent = "✓ נשמר בענן";
+    status.textContent = t("savedCloud");
     status.style.color = "var(--teal)";
     renderHistory();
     updateTabIndicators();
     renderWeekSummary();
   }catch(e){
-    status.textContent = "שגיאה בשמירה: " + (e && e.message ? e.message : String(e));
+    status.textContent = t("saveError") + (e && e.message ? e.message : String(e));
     status.style.color = "#b04a4a";
   }
 });
