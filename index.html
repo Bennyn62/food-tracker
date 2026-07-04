@@ -345,7 +345,7 @@ const I18N = {
     prevDay:"◀ Previous day", nextDay:"Next day ▶", saveDay:"💾 Save day",
     tabBreakfast:"🌅 Breakfast", tabLunch:"☀️ Lunch", tabDinner:"🌙 Dinner", tabExtra:"🍪 Snack", tabActivity:"🏋️ Workout", tabWeek:"📊 Weekly Summary",
     instructionText:"👉 Pick a food in each row, type the amount in grams — values fill in automatically. Don't forget to click \"Save day\" when done.",
-    dailyTotalTitle:"Daily Total", logout:"Log out", hello:"Hello",
+    dailyTotalTitle:"Daily Total", logout:"Log out", hello:"Hello", appTitle:"eWay",
     greetBreakfast:"🌅 Good morning! Time for breakfast", greetLunch:"☀️ Enjoy! Time for lunch",
     greetDinner:"🌙 Good evening! Time for dinner", greetExtra:"🍪 Logging a snack / extra meal",
     greetActivity:"💪 Good time to log a workout", greetWeek:"📊 How was your week",
@@ -391,6 +391,7 @@ function applyStaticTranslations(){
   setText("instructionText", "instructionText");
   setText("dailyTotalTitle", "dailyTotalTitle");
   setText("logoutBtn", "logout");
+  setText("appTitle", "appTitle");
 
   const tabMap = {breakfast:"tabBreakfast", lunch:"tabLunch", dinner:"tabDinner", extra:"tabExtra", activity:"tabActivity", week:"tabWeek"};
   Object.keys(tabMap).forEach(tabId=>{
