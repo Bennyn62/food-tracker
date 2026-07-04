@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>שביל המזון eWay</title>
+<title>eWay</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -27,6 +27,22 @@
 
   #loginGate{max-width:380px;margin:40px auto;background:#fff;border:1px solid var(--grid);border-radius:12px;padding:28px 24px;text-align:center;}
   #loginGate h2{color:var(--dark);margin-top:0;}
+  .eway-logo{
+    text-align:center;font-size:2.6rem;font-weight:800;letter-spacing:-1px;
+    margin-bottom:2px;line-height:1;direction:ltr;
+  }
+  .eway-e{
+    background:linear-gradient(90deg, var(--teal), var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .eway-way{
+    background:linear-gradient(90deg, var(--teal) 20%, var(--accent) 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .eway-arrow{color:var(--accent);font-size:1.6rem;font-weight:600;margin-right:2px;}
+  .eway-tagline{
+    text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:18px;letter-spacing:.2px;
+  }
   #loginGate input{width:100%;padding:12px;font-size:1.1rem;text-align:center;border:1px solid #c9d6d1;border-radius:8px;margin:14px 0;font-family:inherit;letter-spacing:1px;}
   #loginGate button{width:100%;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;}
   #loginGate button:hover{background:var(--dark);}
@@ -116,7 +132,7 @@
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-  .adduser-grid{display:grid;grid-template-columns:1.2fr 1.1fr .7fr .6fr .6fr .7fr .5fr;gap:8px;padding:0 16px 16px;}
+  .adduser-grid{display:grid;grid-template-columns:1.1fr 1fr .6fr .55fr .55fr .65fr .45fr .6fr;gap:8px;padding:0 16px 16px;}
   .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
   .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
@@ -139,16 +155,19 @@
   <div id="connDiag">מתחבר ל-Firebase...</div>
 
   <div id="loginGate">
-    <h2>eWay שביל המזון</h2>
+    <div class="eway-logo">
+      <span class="eway-e">e</span><span class="eway-way">Way</span><span class="eway-arrow">→</span>
+    </div>
+    <div class="eway-tagline">משקל שווה, לגרסה הצעירה שלך</div>
     <div class="sub" style="margin-bottom:0;">הזן את הקוד האישי שקיבלת כדי להיכנס</div>
     <input type="text" id="codeInput" placeholder="הקוד שלך" autocomplete="off">
     <button id="loginBtn">כניסה</button>
     <div id="loginMsg"></div>
-    <div class="hint">אין לך קוד? פנה למנהל eWay.</div>
+    <div class="hint">אין לך קוד? פנה למנהל <a href="tel:0547738662" style="color:var(--teal);font-weight:700;text-decoration:none;">eWay</a>.</div>
   </div>
 
   <div id="appArea">
-    <h1>שביל המזון eWay</h1>
+    <h1>מעקב תזונה יומי</h1>
     <div class="topbar">
       <div class="who" id="whoLabel"></div>
       <button id="logoutBtn">התנתקות</button>
@@ -219,6 +238,10 @@
             <input type="number" id="newUserWeight" placeholder="משקל (ק״ג)" min="0" step="0.1">
             <input type="number" id="newUserWaist" placeholder="היקף מתניים (ס״מ)" min="0" step="0.5">
             <input type="number" id="newUserAge" placeholder="גיל" min="0" step="1">
+            <select id="newUserLanguage">
+              <option value="he">עברית</option>
+              <option value="en">English</option>
+            </select>
           </div>
           <div class="activity-toggle-row">
             <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
@@ -286,6 +309,75 @@
 
 <script>
 const ADMIN_CODE = "BENNY";
+const I18N = {
+  he: {
+    prevDay:"◀ יום קודם", nextDay:"יום הבא ▶", saveDay:"💾 שמור יום",
+    tabBreakfast:"🌅 בוקר", tabLunch:"☀️ צהריים", tabDinner:"🌙 ערב", tabExtra:"🍪 חטיף", tabActivity:"🏋️ אימון", tabWeek:"📊 סיכום שבועי",
+    instructionText:'👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.',
+    dailyTotalTitle:'סה"כ יומי', logout:"התנתקות", hello:"שלום",
+    greetBreakfast:"🌅 בוקר טוב! זמן ארוחת הבוקר", greetLunch:"☀️ בתיאבון! זמן ארוחת הצהריים",
+    greetDinner:"🌙 ערב טוב! זמן ארוחת הערב", greetExtra:"🍪 תיעוד חטיף / ארוחה נוספת",
+    greetActivity:"💪 זמן טוב לתעד אימון", greetWeek:"📊 איך עבר עליך השבוע",
+    mealBreakfast:"בוקר", mealLunch:"צהריים", mealDinner:"ערב", mealExtra:"ארוחה נוספת / חטיף",
+    colFood:"מזון", colQty:"כמות (גר')", colKcal:"קלוריות", colProtein:"חלבון", colFat:"שומן", colCarb:"פחמימה",
+    addRow:"+ הוסף שורה", totalFor:'סה"כ ל', selectFood:"— בחר מזון —",
+    activityTitle:"🏋️ אימון", noActivities:"אין פעילויות מוגדרות עבורך כרגע. פנה למנהל כדי להפעיל מעקב אימונים.",
+    colActivity:"פעילות", colAmount:"כמות / מרחק",
+    actSteps:"🚶 צעדים", actRunning:"🏃 ריצה", actStrength:"🏋️ אימון כוח",
+    phSteps:"כמות צעדים", phKm:"ק״מ", trainedToday:"התאמנתי היום",
+    sleepTitle:"🛏️ שינה", sleepBedtime:"שעת שינה", sleepWake:"שעת השכמה", sleepDefault:"— שעות", sleepHoursLabel:"שעות שינה",
+    labelKcal:"קלוריות (יעד)", labelFat:"שומן (יעד)", labelProtein:"חלבון (יעד)", labelCarb:"פחמימה (יעד)",
+    labelWeightRemainLoss:"נותר להורדה", labelWeightRemainGain:"נותר להעלאה", labelWeightGoalReached:"יעד משקל",
+    weightAchieved:"🎉 הושג",
+    unitKcal:"", unitG:" גר'", unitKg:' ק"ג', unitKm:' ק"מ', unitHours:" שעות",
+    overTarget:"מעל היעד", underTarget:"מתחת ליעד",
+    weightJourneyLabel:"התקדמות למשקל יעד",
+    doneToday:"✓ בוצע היום", notDoneToday:"לא בוצע היום",
+    labelSteps:"צעדים", labelRunning:"ריצה", labelStrength:"אימון כוח", labelSleep:"שינה",
+    weekSummaryTitle:"📊 סיכום שבועי", weekNoData:"אין עדיין נתונים לשבוע הנוכחי.",
+    daysWithData:"ימים עם נתונים", day:"יום", days:"ימים",
+    avgDaily:" (ממוצע יומי)", strengthWeekSessions:"אימוני כוח השבוע", strengthWeekSimple:"אימונים השבוע",
+    saving:"שומר...", savedCloud:"✓ נשמר בענן", saveError:"שגיאה בשמירה: ",
+    loginNoCode:"אין לך קוד? פנה למנהל", codeNotFound:"קוד לא מזוהה. בדוק שוב או פנה למנהל.",
+    userBlocked:"המשתמש חסום. פנה למנהל.",
+  },
+  en: {
+    prevDay:"◀ Previous day", nextDay:"Next day ▶", saveDay:"💾 Save day",
+    tabBreakfast:"🌅 Breakfast", tabLunch:"☀️ Lunch", tabDinner:"🌙 Dinner", tabExtra:"🍪 Snack", tabActivity:"🏋️ Workout", tabWeek:"📊 Weekly Summary",
+    instructionText:"👉 Pick a food in each row, type the amount in grams — values fill in automatically. Don't forget to click \"Save day\" when done.",
+    dailyTotalTitle:"Daily Total", logout:"Log out", hello:"Hello",
+    greetBreakfast:"🌅 Good morning! Time for breakfast", greetLunch:"☀️ Enjoy! Time for lunch",
+    greetDinner:"🌙 Good evening! Time for dinner", greetExtra:"🍪 Logging a snack / extra meal",
+    greetActivity:"💪 Good time to log a workout", greetWeek:"📊 How was your week",
+    mealBreakfast:"Breakfast", mealLunch:"Lunch", mealDinner:"Dinner", mealExtra:"Extra meal / Snack",
+    colFood:"Food", colQty:"Amount (g)", colKcal:"Calories", colProtein:"Protein", colFat:"Fat", colCarb:"Carbs",
+    addRow:"+ Add row", totalFor:"Total for ", selectFood:"— Select food —",
+    activityTitle:"🏋️ Workout", noActivities:"No activities set up for you yet. Contact your admin to enable workout tracking.",
+    colActivity:"Activity", colAmount:"Amount / Distance",
+    actSteps:"🚶 Steps", actRunning:"🏃 Running", actStrength:"🏋️ Strength training",
+    phSteps:"Step count", phKm:"km", trainedToday:"Trained today",
+    sleepTitle:"🛏️ Sleep", sleepBedtime:"Bedtime", sleepWake:"Wake time", sleepDefault:"— hours", sleepHoursLabel:"hours of sleep",
+    labelKcal:"Calories (target)", labelFat:"Fat (target)", labelProtein:"Protein (target)", labelCarb:"Carbs (target)",
+    labelWeightRemainLoss:"Left to lose", labelWeightRemainGain:"Left to gain", labelWeightGoalReached:"Weight target",
+    weightAchieved:"🎉 Reached",
+    unitKcal:"", unitG:"g", unitKg:"kg", unitKm:"km", unitHours:"h",
+    overTarget:"over target", underTarget:"under target",
+    weightJourneyLabel:"Progress to target weight",
+    doneToday:"✓ Done today", notDoneToday:"Not done today",
+    labelSteps:"Steps", labelRunning:"Running", labelStrength:"Strength training", labelSleep:"Sleep",
+    weekSummaryTitle:"📊 Weekly Summary", weekNoData:"No data yet for this week.",
+    daysWithData:"days with data", day:"day", days:"days",
+    avgDaily:" (daily avg)", strengthWeekSessions:"Strength sessions this week", strengthWeekSimple:"sessions this week",
+    saving:"Saving...", savedCloud:"✓ Saved to cloud", saveError:"Save error: ",
+    loginNoCode:"No code? Contact your", codeNotFound:"Code not recognized. Check again or contact your admin.",
+    userBlocked:"This user is blocked. Contact your admin.",
+  }
+};
+function t(key){
+  const lang = (currentUser && currentUser.language) || "he";
+  return (I18N[lang] && I18N[lang][key]) || I18N.he[key] || key;
+}
+
 const TARGETS_DEFAULT = {kcal:2200, p:155, f:65, c:210};
 let currentTargets = {...TARGETS_DEFAULT};
 
@@ -554,7 +646,12 @@ async function doLogin(){
       msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
+    if(found.blocked){
+      msg.style.color = "#b04a4a";
+      msg.textContent = "המשתמש חסום. פנה למנהל.";
+      return;
+    }
+    currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
@@ -630,6 +727,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const weight = parseFloat(document.getElementById("newUserWeight").value) || null;
   const waist = parseFloat(document.getElementById("newUserWaist").value) || null;
   const age = parseFloat(document.getElementById("newUserAge").value) || null;
+  const language = document.getElementById("newUserLanguage").value;
   const actSteps = document.getElementById("newUserActSteps").checked;
   const actRunning = document.getElementById("newUserActRunning").checked;
   const actStrength = document.getElementById("newUserActStrength").checked;
@@ -647,7 +745,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     if(users.find(u=>u.code === code)){
       msg.style.color="#b04a4a"; msg.textContent="הקוד הזה כבר קיים, בחר קוד אחר."; return;
     }
-    await fbAddUser(code, {name, gender, height, weight, waist, age,
+    await fbAddUser(code, {name, gender, height, weight, waist, age, language,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
       stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget});
     document.getElementById("newUserName").value = "";
@@ -797,7 +895,8 @@ async function renderAdminUserList(){
     }
     list.innerHTML = users.map(u=>{
       const daysInfo = daysSinceLabel(u.lastWeightDate);
-      return `<div class="admin-user-chip" data-code="${u.code}">${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span> <span style="font-size:.72rem;font-weight:600;color:${daysInfo.color};">${daysInfo.text}</span></div>`;
+      const blockedTag = u.blocked ? `<span style="font-size:.72rem;font-weight:700;color:#b04a4a;"> 🚫 חסום</span>` : "";
+      return `<div class="admin-user-chip" data-code="${u.code}" style="${u.blocked ? 'opacity:.6;' : ''}">${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span> <span style="font-size:.72rem;font-weight:600;color:${daysInfo.color};">${daysInfo.text}</span>${blockedTag}</div>`;
     }).join("");
     list.querySelectorAll(".admin-user-chip").forEach(chip=>{
       chip.addEventListener("click", ()=>{
@@ -1025,18 +1124,20 @@ async function showAdminUserPanel(code, label, userData){
         ` : ''}
         <div style="margin-top:14px;display:flex;gap:8px;">
           <button class="addrow" id="editUserBtn-${code}">✎ ערוך פרטים</button>
+          <button class="addrow" id="blockUserBtn-${code}" style="border-color:#c77b2b;color:#c77b2b;">${userData.blocked ? '✅ הסר חסימה' : '🚫 חסום משתמש'}</button>
           <button class="addrow" id="deleteUserBtn-${code}" style="border-color:#b04a4a;color:#b04a4a;">🗑 מחק משתמש</button>
         </div>
         <div id="userActionMsg-${code}" style="font-size:.82rem;margin-top:6px;"></div>
       </div>
       <div id="userEditForm-${code}" style="display:none;margin-top:10px;">
-        <div class="addfood-grid" style="grid-template-columns:repeat(6,1fr);">
+        <div class="addfood-grid" style="grid-template-columns:repeat(7,1fr);">
           <div class="af-field"><label>שם</label><input type="text" id="editName-${code}" value="${userData.name||''}"></div>
           <div class="af-field"><label>מין</label><select id="editGender-${code}"><option value="male" ${userData.gender!=='female'?'selected':''}>זכר</option><option value="female" ${userData.gender==='female'?'selected':''}>נקבה</option></select></div>
           <div class="af-field"><label>גובה (ס״מ)</label><input type="number" id="editHeight-${code}" value="${userData.height||''}"></div>
           <div class="af-field"><label>משקל (ק״ג)</label><input type="number" id="editWeight-${code}" value="${userData.weight||''}" step="0.1"></div>
           <div class="af-field"><label>היקף מתניים (ס״מ)</label><input type="number" id="editWaist-${code}" value="${userData.waist||''}" step="0.5"></div>
           <div class="af-field"><label>גיל</label><input type="number" id="editAge-${code}" value="${userData.age||''}"></div>
+          <div class="af-field"><label>שפה</label><select id="editLanguage-${code}"><option value="he" ${userData.language!=='en'?'selected':''}>עברית</option><option value="en" ${userData.language==='en'?'selected':''}>English</option></select></div>
         </div>
         <div class="activity-toggle-row" style="padding:10px 0;">
           <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
@@ -1105,6 +1206,17 @@ async function showAdminUserPanel(code, label, userData){
     document.getElementById(`userStatsView-${code}`).style.display = "none";
     document.getElementById(`userEditForm-${code}`).style.display = "block";
   });
+  document.getElementById(`blockUserBtn-${code}`).addEventListener("click", async function(){
+    const newBlockedState = !userData.blocked;
+    try{
+      await fbUpdateUser(code, {blocked: newBlockedState});
+      renderAdminUserList();
+      showAdminUserPanel(code, label, {...userData, blocked: newBlockedState});
+    }catch(e){
+      document.getElementById(`userActionMsg-${code}`).style.color = "#b04a4a";
+      document.getElementById(`userActionMsg-${code}`).textContent = "שגיאה: " + (e && e.message ? e.message : e);
+    }
+  });
   document.getElementById(`cancelEditBtn-${code}`).addEventListener("click", ()=>{
     document.getElementById(`userStatsView-${code}`).style.display = "block";
     document.getElementById(`userEditForm-${code}`).style.display = "none";
@@ -1116,6 +1228,7 @@ async function showAdminUserPanel(code, label, userData){
     const newWeight = parseFloat(document.getElementById(`editWeight-${code}`).value) || null;
     const newWaist = parseFloat(document.getElementById(`editWaist-${code}`).value) || null;
     const newAge = parseFloat(document.getElementById(`editAge-${code}`).value) || null;
+    const newLanguage = document.getElementById(`editLanguage-${code}`).value;
     const newActSteps = document.getElementById(`editActSteps-${code}`).checked;
     const newActRunning = document.getElementById(`editActRunning-${code}`).checked;
     const newActStrength = document.getElementById(`editActStrength-${code}`).checked;
@@ -1124,7 +1237,7 @@ async function showAdminUserPanel(code, label, userData){
     const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
     const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
+    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
@@ -1305,21 +1418,21 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
   const hasSleepTarget = !!(userData && userData.sleepTarget);
 
   const headCells = ["", "קלוריות", "שומן", "פחמימה", "חלבון"];
-  if(hasWeightData) headCells.push("משקל");
   if(primaryAct) headCells.push(primaryAct.label);
   if(hasSleepTarget) headCells.push("שינה");
+  if(hasWeightData) headCells.push("משקל");
 
   const targetWeightVal = calcTargetWeight(userData.height, userData.age, userData.gender);
 
   let targetCells = `<td>${Math.round(pt.kcal)}</td><td>${Math.round(pt.f)} גר'</td><td>${Math.round(pt.c)} גר'</td><td>${Math.round(pt.p)} גר'</td>`;
-  if(hasWeightData){
-    targetCells += `<td>${targetWeightVal ? targetWeightVal.target + ' ק"ג' : '—'}</td>`;
-  }
   if(primaryAct){
     targetCells += `<td>${primaryAct.target ? primaryAct.target : '—'}</td>`;
   }
   if(hasSleepTarget){
     targetCells += `<td>${userData.sleepTarget} שעות</td>`;
+  }
+  if(hasWeightData){
+    targetCells += `<td>${targetWeightVal ? targetWeightVal.target + ' ק"ג' : '—'}</td>`;
   }
   const targetRow = `<tr style="background:var(--lightbg);"><td class="stat-period-label">🎯 יעד</td>${targetCells}</tr>`;
 
@@ -1342,11 +1455,6 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
       cells = `<td>${pctCell(pk)}</td><td>${pctCell(pf)}</td><td>${pctCell(pc)}</td><td>${pctCell(pp)}</td>`;
     }
 
-    if(hasWeightData){
-      const cellText = weightColumnCell(per.key, weightCtx);
-      cells += `<td>${cellText}</td>`;
-    }
-
     if(primaryAct){
       const days = periodDayCount(per.key);
       let actPct = null;
@@ -1365,6 +1473,11 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
       const avgSleep = sleepPeriodAvg(log, range.start, range.end);
       const sleepPct = (avgSleep !== null) ? Math.round((avgSleep/userData.sleepTarget)*100) : null;
       cells += `<td>${pctCell(sleepPct)}</td>`;
+    }
+
+    if(hasWeightData){
+      const cellText = weightColumnCell(per.key, weightCtx);
+      cells += `<td>${cellText}</td>`;
     }
 
     return `<tr><td class="stat-period-label">${per.label}</td>${cells}</tr>`;
