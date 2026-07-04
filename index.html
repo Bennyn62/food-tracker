@@ -152,18 +152,18 @@
 </head>
 <body>
 <div class="wrap">
-  <div id="connDiag">מתחבר ל-Firebase...</div>
+  <div id="connDiag">Connecting to Firebase...</div>
 
-  <div id="loginGate">
+  <div id="loginGate" dir="ltr" lang="en">
     <div class="eway-logo">
       <span class="eway-e">e</span><span class="eway-way">Way</span><span class="eway-arrow">→</span>
     </div>
-    <div class="eway-tagline">משקל שווה, לגרסה הצעירה שלך</div>
-    <div class="sub" style="margin-bottom:0;">הזן את הקוד האישי שקיבלת כדי להיכנס</div>
-    <input type="text" id="codeInput" placeholder="הקוד שלך" autocomplete="off">
-    <button id="loginBtn">כניסה</button>
+    <div class="eway-tagline">Equal Weight and Younger You</div>
+    <div class="sub" style="margin-bottom:0;">Enter the personal code you received to log in</div>
+    <input type="text" id="codeInput" placeholder="Your code" autocomplete="off">
+    <button id="loginBtn">Log in</button>
     <div id="loginMsg"></div>
-    <div class="hint">אין לך קוד? פנה למנהל <a href="tel:0547738662" style="color:var(--teal);font-weight:700;text-decoration:none;">eWay</a>.</div>
+    <div class="hint">Don't have a code? Contact your <a href="tel:0547738662" style="color:var(--teal);font-weight:700;text-decoration:none;">eWay</a> admin.</div>
   </div>
 
   <div id="appArea">
@@ -487,18 +487,18 @@ function initFirebase(){
   try{
     if(typeof firebase === "undefined"){
       diag.className = "bad";
-      diag.textContent = "⚠️ ספריית Firebase לא נטענה (בדוק חיבור אינטרנט ורענן את הדף).";
+      diag.textContent = "⚠️ Firebase library failed to load (check your internet connection and refresh the page).";
       return;
     }
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     firebaseReady = true;
     diag.className = "ok";
-    diag.textContent = "✓ מחובר ל-Firebase";
+    diag.textContent = "✓ Connected to Firebase";
     setTimeout(()=>{ diag.style.display = "none"; }, 2500);
   }catch(e){
     diag.className = "bad";
-    diag.textContent = "⚠️ שגיאת חיבור ל-Firebase: " + (e && e.message ? e.message : String(e));
+    diag.textContent = "⚠️ Firebase connection error: " + (e && e.message ? e.message : String(e));
   }
 }
 
@@ -656,10 +656,10 @@ document.getElementById("codeInput").addEventListener("keydown", e=>{ if(e.key==
 async function doLogin(){
   const code = document.getElementById("codeInput").value.trim();
   const msg = document.getElementById("loginMsg");
-  if(!firebaseReady){ msg.style.color="#b04a4a"; msg.textContent="עדיין מתחבר ל-Firebase, נסה שוב בעוד רגע."; return; }
-  if(!code){ msg.textContent = "הזן קוד."; return; }
+  if(!firebaseReady){ msg.style.color="#b04a4a"; msg.textContent="Still connecting to Firebase, try again in a moment."; return; }
+  if(!code){ msg.textContent = "Enter a code."; return; }
   msg.style.color = "var(--muted)";
-  msg.textContent = "בודק...";
+  msg.textContent = "Checking...";
 
   if(code === ADMIN_CODE){
     currentUser = {code, name:"מנהל", isAdmin:true};
@@ -671,19 +671,19 @@ async function doLogin(){
     const found = users.find(u=>u.code === code);
     if(!found){
       msg.style.color = "#b04a4a";
-      msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
+      msg.textContent = "Code not recognized. Check again or contact your admin.";
       return;
     }
     if(found.blocked){
       msg.style.color = "#b04a4a";
-      msg.textContent = "המשתמש חסום. פנה למנהל.";
+      msg.textContent = "This user is blocked. Contact your admin.";
       return;
     }
     currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
-    msg.textContent = "שגיאת התחברות: " + (e && e.message ? e.message : String(e));
+    msg.textContent = "Login error: " + (e && e.message ? e.message : String(e));
   }
 }
 
