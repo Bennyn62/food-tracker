@@ -283,16 +283,6 @@
     </div>
 
     <div id="userView" style="display:none;">
-      <div class="controlbar">
-        <button class="control-item" id="prevDay">◀ יום קודם</button>
-        <div class="control-item control-date">
-          <input type="date" id="dateInput">
-        </div>
-        <button class="control-item" id="nextDay">יום הבא ▶</button>
-        <button class="control-item control-save" id="saveBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span>שמור יום</span></button>
-      </div>
-      <div style="text-align:center;margin-bottom:14px;"><span id="saveStatus"></span></div>
-
       <div class="badges" id="targetBadges"></div>
 
       <div id="greetingBanner" style="text-align:center;font-size:1rem;font-weight:700;color:var(--dark);margin-bottom:10px;"></div>
@@ -305,6 +295,16 @@
         <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg> <span>אימון</span></button>
         <button class="tab-btn" data-tab="week" style="--tabColor:var(--dark);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> <span>סיכום שבועי</span></button>
       </div>
+
+      <div class="controlbar">
+        <button class="control-item" id="prevDay">◀ יום קודם</button>
+        <div class="control-item control-date">
+          <input type="date" id="dateInput">
+        </div>
+        <button class="control-item" id="nextDay">יום הבא ▶</button>
+        <button class="control-item control-save" id="saveBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span>שמור יום</span></button>
+      </div>
+      <div style="text-align:center;margin-bottom:14px;"><span id="saveStatus"></span></div>
 
       <div class="sub" id="instructionText" style="font-size:.85rem;color:var(--accent);font-weight:600;">
         👉 בחר מזון בכל שורה, הקלד כמות בגרמים, ולחץ "שמור יום" בסיום.
