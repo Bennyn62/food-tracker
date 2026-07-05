@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>eWay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -13,21 +13,23 @@
     --dark:#1a3c34; --teal:#2f6b5e; --accent:#c77b2b;
     --lightbg:#eaf3ef; --rowbg:#f7f9f8; --grid:#d7e5e0; --text:#222; --muted:#5b6b66;
     --breakfast:#2e7d4f; --lunch:#c96a1f; --dinner:#2a5f9e; --extra:#6a5296;
+    --radius-sm:8px; --radius-md:10px; --radius-pill:20px;
+    --shadow-sm:0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:"Segoe UI", Arial, sans-serif;background:#f3f6f4;color:var(--text);padding:24px 16px 60px;}
+  body{margin:0;font-family:'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;background:#f3f6f4;color:var(--text);padding:24px 16px 60px;}
   .wrap{max-width:1100px;margin:0 auto;}
   h1{text-align:center;color:var(--dark);font-size:1.7rem;margin:0 0 4px;}
   .sub{text-align:center;color:var(--muted);font-size:.95rem;margin-bottom:12px;}
 
   #connDiag{
     text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:10px;
-    background:#fafcfa;border:1px solid var(--grid);border-radius:8px;padding:6px 10px;
+    background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);padding:6px 10px;
   }
   #connDiag.ok{color:var(--teal);}
   #connDiag.bad{color:#b04a4a;background:#fdf0f0;}
 
-  #loginGate{max-width:380px;margin:40px auto;background:#fff;border:1px solid var(--grid);border-radius:12px;padding:28px 24px;text-align:center;}
+  #loginGate{max-width:380px;margin:40px auto;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:28px 24px;text-align:center;}
   #loginGate h2{color:var(--dark);margin-top:0;}
   .eway-logo{
     text-align:center;font-family:'Playfair Display', Georgia, serif;
@@ -43,8 +45,8 @@
   .eway-tagline{
     text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:18px;letter-spacing:.2px;
   }
-  #loginGate input{width:100%;padding:12px;font-size:1.1rem;text-align:center;border:1px solid #c9d6d1;border-radius:8px;margin:14px 0;font-family:inherit;letter-spacing:1px;}
-  #loginGate button{width:100%;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;}
+  #loginGate input{width:100%;padding:12px;font-size:1.1rem;text-align:center;border:1px solid #c9d6d1;border-radius:var(--radius-sm);margin:14px 0;font-family:inherit;letter-spacing:1px;}
+  #loginGate button{width:100%;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-sm);font-size:1rem;cursor:pointer;}
   #loginGate button:hover{background:var(--dark);}
   #loginMsg{color:#b04a4a;font-size:.85rem;min-height:1.2em;margin-top:8px;}
   #loginGate .hint{font-size:.78rem;color:var(--muted);margin-top:14px;}
@@ -52,23 +54,37 @@
   #appArea{display:none;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
   .topbar .who{font-weight:700;color:var(--dark);}
-  .topbar button{background:none;border:1px solid var(--grid);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;}
+  .topbar button{background:none;border:1px solid var(--grid);color:var(--muted);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;}
 
   .datebar{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:18px;flex-wrap:wrap;}
-  .datebar input[type=date]{padding:8px 10px;border:1px solid #c9d6d1;border-radius:8px;font-family:inherit;font-size:.95rem;}
-  .datebar button{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:.9rem;}
+  .controlbar{display:flex;background:var(--dark);border-radius:var(--radius-md);overflow:hidden;margin-bottom:12px;}
+  .control-item{
+    flex:1;text-align:center;padding:12px 4px;color:#fff;border-left:1px solid #3d5c54;
+    background:none;border-top:none;border-bottom:none;border-right:none;font-size:.82rem;
+    cursor:pointer;font-family:inherit;white-space:nowrap;
+  }
+  .control-item:last-child{border-left:none;}
+  .control-item.control-save{background:var(--teal);font-weight:700;}
+  .control-date{padding:6px 4px;display:flex;align-items:center;justify-content:center;}
+  .control-date input[type=date]{
+    background:none;border:none;color:#fff;font-family:inherit;font-size:.8rem;
+    text-align:center;width:100%;padding:6px 0;
+  }
+  .control-date input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
+  .datebar input[type=date]{padding:8px 10px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;font-size:.95rem;}
+  .datebar button{padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:.9rem;}
   .btn-save{background:var(--teal);color:#fff;}
   .btn-save:hover{background:var(--dark);}
   .btn-nav{background:#fff;border:1px solid var(--grid) !important;color:var(--dark);}
   #saveStatus{font-size:.8rem;color:var(--teal);min-width:120px;}
 
-  .badges{display:flex;background:var(--dark);border-radius:10px;overflow:hidden;margin-bottom:26px;}
+  .badges{display:flex;background:var(--dark);border-radius:var(--radius-md);overflow:hidden;margin-bottom:26px;}
   .badge{flex:1;text-align:center;padding:12px 6px;color:#fff;border-left:1px solid #3d5c54;}
   .badge:last-child{border-left:none;}
   .badge .num{font-size:1.15rem;font-weight:700;}
   .badge .lbl{font-size:.75rem;color:#cfe0da;margin-top:2px;}
 
-  section{background:#fff;border:1px solid var(--grid);border-radius:10px;margin-bottom:18px;overflow:hidden;}
+  section{background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);margin-bottom:18px;overflow:hidden;}
   section h2{color:#fff;margin:0;padding:10px 16px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;background:var(--teal);}
   section h2 .meal-total{font-size:.85rem;font-weight:400;color:#dff0ea;}
 
@@ -77,19 +93,19 @@
   tbody td{padding:6px;border-bottom:1px solid var(--grid);text-align:center;vertical-align:middle;}
   tbody tr:nth-child(even){background:var(--rowbg);}
 
-  select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid #c9d6d1;border-radius:6px;font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);}
+  select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);}
   input[type=number]{text-align:center;}
   .val{font-weight:600;color:var(--dark);}
   .subtotal-row td{background:var(--lightbg);font-weight:700;color:var(--dark);}
   .row-actions{padding:8px 16px;text-align:left;}
-  button.addrow{background:none;border:1px dashed var(--teal);color:var(--teal);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;}
+  button.addrow{background:none;border:1px dashed var(--teal);color:var(--teal);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;}
   button.addrow:hover{background:var(--lightbg);}
   button.delrow{background:none;border:none;color:#b04a4a;cursor:pointer;font-size:1rem;line-height:1;}
 
-  .daily-total{background:var(--dark);border-radius:10px;padding:18px 20px;color:#fff;margin-top:10px;}
+  .daily-total{background:var(--dark);border-radius:var(--radius-md);padding:18px 20px;color:#fff;margin-top:10px;}
   .daily-total h2{margin:0 0 12px;font-size:1.1rem;color:#fff;}
   .dt-grid{display:flex;gap:14px;flex-wrap:wrap;}
-  .dt-card{flex:1;min-width:140px;background:rgba(255,255,255,.06);border-radius:8px;padding:10px 12px;}
+  .dt-card{flex:1;min-width:140px;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:10px 12px;}
   .dt-card .num{font-size:1.3rem;font-weight:700;}
   .dt-card .lbl{font-size:.78rem;color:#cfe0da;margin-bottom:4px;}
   .dt-card .bar{height:6px;background:rgba(255,255,255,.15);border-radius:4px;margin-top:6px;overflow:hidden;}
@@ -99,18 +115,19 @@
   .note{text-align:center;color:var(--muted);font-size:.8rem;margin-top:20px;}
   .addfood-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;}
   .af-field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px;}
-  .af-field input{width:100%;padding:7px 8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;font-size:.88rem;}
+  .af-field input{width:100%;padding:7px 8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;font-size:.88rem;}
 
   .tab-bar{
     display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;
   }
   .tab-btn{
-    flex:0 0 auto;padding:9px 16px;border-radius:20px;border:2px solid transparent;
+    flex:0 0 auto;padding:9px 16px;border-radius:var(--radius-pill);border:2px solid transparent;
     background:var(--tabColor, var(--teal));color:#fff;font-size:.88rem;cursor:pointer;white-space:nowrap;
-    position:relative;font-family:inherit;opacity:.5;transition:opacity .15s, border-color .15s;
+    position:relative;font-family:inherit;transition:border-color .15s, box-shadow .15s, transform .1s;
   }
+  .tab-btn:active{transform:scale(.96);}
   .tab-btn.active{
-    opacity:1;border-color:var(--dark);font-weight:700;
+    border-color:#fff;font-weight:700;box-shadow:var(--shadow-sm);
   }
   .tab-btn.filled:not(.active)::after{
     content:"";position:absolute;top:4px;left:6px;width:7px;height:7px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.2);
@@ -121,7 +138,7 @@
   #historyBody tr:hover{background:var(--lightbg) !important;}
 
   .stat-grid{display:flex;gap:10px;flex-wrap:wrap;}
-  .stat-cell{min-width:100px;background:#fff;border:1px solid var(--grid);border-radius:10px;padding:10px 14px;text-align:center;}
+  .stat-cell{min-width:100px;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:10px 14px;text-align:center;}
   .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;font-weight:600;}
   .stat-value{font-size:1.1rem;font-weight:700;color:var(--dark);}
   .stat-value.accent{color:var(--teal);}
@@ -130,14 +147,14 @@
   .period-table td{font-size:.92rem;font-weight:700;color:var(--dark);padding:6px;text-align:center;border-top:1px solid var(--grid);}
   .period-table td.stat-period-label{font-size:.8rem;font-weight:600;color:var(--muted);text-align:right;}
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
-  .admin-user-chip{padding:8px 14px;border:1px solid var(--grid);border-radius:20px;cursor:pointer;font-size:.85rem;background:#fff;}
+  .admin-user-chip{padding:8px 14px;box-shadow:var(--shadow-sm);border:2px solid transparent;border-radius:var(--radius-pill);cursor:pointer;font-size:.85rem;background:#fff;transition:border-color .15s;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
   .adduser-grid{display:grid;grid-template-columns:1.1fr 1fr .6fr .55fr .55fr .65fr .45fr .6fr;gap:8px;padding:0 16px 16px;}
-  .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
-  .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;}
+  .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;}
+  .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
   .activity-toggle-row label{display:flex;align-items:center;gap:4px;cursor:pointer;}
-  .activity-toggle-row input[type=number]{padding:6px 8px;border:1px solid #c9d6d1;border-radius:6px;font-family:inherit;}
+  .activity-toggle-row input[type=number]{padding:6px 8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;}
   @media (max-width:700px){
     .adduser-grid{grid-template-columns:1fr 1fr;}
   }
@@ -175,9 +192,9 @@
 
     <div id="adminView" style="display:none;">
       <div class="tab-bar" id="adminTabBar">
-        <button class="tab-btn" data-atab="manage" style="--tabColor:var(--teal);">👥 ניהול משתמשים</button>
-        <button class="tab-btn" data-atab="foods" style="--tabColor:var(--lunch);">🍽️ מזונות</button>
-        <button class="tab-btn" data-atab="addUser" style="--tabColor:var(--breakfast);">➕ הוספת משתמש</button>
+        <button class="tab-btn" data-atab="manage" style="--tabColor:var(--teal);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ניהול משתמשים</button>
+        <button class="tab-btn" data-atab="foods" style="--tabColor:var(--lunch);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> מזונות</button>
+        <button class="tab-btn" data-atab="addUser" style="--tabColor:var(--breakfast);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> הוספת משתמש</button>
       </div>
 
       <div id="adminPanel-manage" class="admin-tab-panel">
@@ -185,7 +202,7 @@
           <h2><span>ניהול משתמשים</span></h2>
           <div class="admin-users" id="adminUserList"></div>
           <div style="padding:0 16px 14px;">
-            <button class="addrow" id="exportAllCsvBtn">⬇️ ייצוא CSV לכל המשתמשים</button>
+            <button class="addrow" id="exportAllCsvBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ייצוא CSV לכל המשתמשים</button>
             <span id="exportAllMsg" style="font-size:.8rem;margin-right:8px;"></span>
           </div>
         </section>
@@ -198,7 +215,7 @@
           <div style="padding:14px 16px;">
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--grid);">
               <input type="text" id="usda-search-input" placeholder="חיפוש אוטומטי מ-USDA (באנגלית, למשל: chicken breast)" style="flex:1;min-width:220px;">
-              <button class="addrow" id="usda-search-btn">🔍 חפש</button>
+              <button class="addrow" id="usda-search-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> חפש</button>
             </div>
             <div id="usda-search-results" style="margin-bottom:12px;"></div>
             <div class="addfood-grid">
@@ -258,7 +275,7 @@
           </div>
           <!-- future target/definition sections should be added above this line -->
           <div style="padding:14px 16px;">
-            <button id="addUserBtn" class="btn-save" style="padding:10px 24px;border-radius:8px;">+ הוסף משתמש</button>
+            <button id="addUserBtn" class="btn-save" style="padding:10px 24px;border-radius:var(--radius-sm);">+ הוסף משתמש</button>
           </div>
           <div id="addUserMsg" style="padding:0 16px 10px;font-size:.85rem;"></div>
         </section>
@@ -266,29 +283,31 @@
     </div>
 
     <div id="userView" style="display:none;">
-      <div class="datebar">
-        <button class="btn-nav" id="prevDay">◀ יום קודם</button>
-        <input type="date" id="dateInput">
-        <button class="btn-nav" id="nextDay">יום הבא ▶</button>
-        <button class="btn-save" id="saveBtn">💾 שמור יום</button>
-        <span id="saveStatus"></span>
+      <div class="controlbar">
+        <button class="control-item" id="prevDay">◀ יום קודם</button>
+        <div class="control-item control-date">
+          <input type="date" id="dateInput">
+        </div>
+        <button class="control-item" id="nextDay">יום הבא ▶</button>
+        <button class="control-item control-save" id="saveBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span>שמור יום</span></button>
       </div>
+      <div style="text-align:center;margin-bottom:14px;"><span id="saveStatus"></span></div>
 
       <div class="badges" id="targetBadges"></div>
 
       <div id="greetingBanner" style="text-align:center;font-size:1rem;font-weight:700;color:var(--dark);margin-bottom:10px;"></div>
 
       <div class="tab-bar" id="tabBar">
-        <button class="tab-btn" data-tab="breakfast" style="--tabColor:var(--breakfast);">🌅 בוקר</button>
-        <button class="tab-btn" data-tab="lunch" style="--tabColor:var(--lunch);">☀️ צהריים</button>
-        <button class="tab-btn" data-tab="dinner" style="--tabColor:var(--dinner);">🌙 ערב</button>
-        <button class="tab-btn" data-tab="extra" style="--tabColor:var(--extra);">🍪 חטיף</button>
-        <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);">🏋️ אימון</button>
-        <button class="tab-btn" data-tab="week" style="--tabColor:var(--dark);">📊 סיכום שבועי</button>
+        <button class="tab-btn" data-tab="breakfast" style="--tabColor:var(--breakfast);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="13" r="4"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="4" y1="13" x2="6.5" y2="13"/><line x1="17.5" y1="13" x2="20" y2="13"/><line x1="5" y1="20" x2="19" y2="20"/></svg> <span>בוקר</span></button>
+        <button class="tab-btn" data-tab="lunch" style="--tabColor:var(--lunch);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> <span>צהריים</span></button>
+        <button class="tab-btn" data-tab="dinner" style="--tabColor:var(--dinner);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 12 12.79z"/></svg> <span>ערב</span></button>
+        <button class="tab-btn" data-tab="extra" style="--tabColor:var(--extra);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none"/></svg> <span>חטיף</span></button>
+        <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg> <span>אימון</span></button>
+        <button class="tab-btn" data-tab="week" style="--tabColor:var(--dark);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> <span>סיכום שבועי</span></button>
       </div>
 
       <div class="sub" id="instructionText" style="font-size:.85rem;color:var(--accent);font-weight:600;">
-        👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.
+        👉 בחר מזון בכל שורה, הקלד כמות בגרמים, ולחץ "שמור יום" בסיום.
       </div>
 
       <div id="mealsContainer"></div>
@@ -311,9 +330,9 @@
 const ADMIN_CODE = "BENNY";
 const I18N = {
   he: {
-    prevDay:"◀ יום קודם", nextDay:"יום הבא ▶", saveDay:"💾 שמור יום",
-    tabBreakfast:"🌅 בוקר", tabLunch:"☀️ צהריים", tabDinner:"🌙 ערב", tabExtra:"🍪 חטיף", tabActivity:"🏋️ אימון", tabWeek:"📊 סיכום שבועי",
-    instructionText:'👉 בחר מזון בכל שורה, הקלד כמות בגרמים — הערכים מתמלאים לבד. אל תשכח ללחוץ "שמור יום" בסיום.',
+    prevDay:"◀ יום קודם", nextDay:"יום הבא ▶", saveDay:"שמור יום",
+    tabBreakfast:"בוקר", tabLunch:"צהריים", tabDinner:"ערב", tabExtra:"חטיף", tabActivity:"אימון", tabWeek:"סיכום שבועי",
+    instructionText:'👉 בחר מזון בכל שורה, הקלד כמות בגרמים, ולחץ "שמור יום" בסיום.',
     dailyTotalTitle:'סה"כ יומי', logout:"התנתקות", hello:"שלום", appTitle:"מעקב תזונה יומי",
     greetBreakfast:"🌅 בוקר טוב! זמן ארוחת הבוקר", greetLunch:"☀️ בתיאבון! זמן ארוחת הצהריים",
     greetDinner:"🌙 ערב טוב! זמן ארוחת הערב", greetExtra:"🍪 תיעוד חטיף / ארוחה נוספת",
@@ -321,11 +340,11 @@ const I18N = {
     mealBreakfast:"בוקר", mealLunch:"צהריים", mealDinner:"ערב", mealExtra:"ארוחה נוספת / חטיף",
     colFood:"מזון", colQty:"כמות (גר')", colKcal:"קלוריות", colProtein:"חלבון", colFat:"שומן", colCarb:"פחמימה",
     addRow:"+ הוסף שורה", totalFor:'סה"כ ל', selectFood:"— בחר מזון —",
-    activityTitle:"🏋️ אימון", noActivities:"אין פעילויות מוגדרות עבורך כרגע. פנה למנהל כדי להפעיל מעקב אימונים.",
+    activityTitle:"אימון", noActivities:"אין פעילויות מוגדרות עבורך כרגע. פנה למנהל כדי להפעיל מעקב אימונים.",
     colActivity:"פעילות", colAmount:"כמות / מרחק",
     actSteps:"🚶 צעדים", actRunning:"🏃 ריצה", actStrength:"🏋️ אימון כוח",
     phSteps:"כמות צעדים", phKm:"ק״מ", trainedToday:"התאמנתי היום",
-    sleepTitle:"🛏️ שינה", sleepBedtime:"שעת שינה", sleepWake:"שעת השכמה", sleepDefault:"— שעות", sleepHoursLabel:"שעות שינה",
+    sleepTitle:"שינה", sleepBedtime:"שעת שינה", sleepWake:"שעת השכמה", sleepDefault:"— שעות", sleepHoursLabel:"שעות שינה",
     labelKcal:"קלוריות (יעד)", labelFat:"שומן (יעד)", labelProtein:"חלבון (יעד)", labelCarb:"פחמימה (יעד)",
     labelWeightRemainLoss:"נותר להורדה", labelWeightRemainGain:"נותר להעלאה", labelWeightGoalReached:"יעד משקל",
     weightAchieved:"🎉 הושג",
@@ -334,7 +353,7 @@ const I18N = {
     weightJourneyLabel:"התקדמות למשקל יעד",
     doneToday:"✓ בוצע היום", notDoneToday:"לא בוצע היום",
     labelSteps:"צעדים", labelRunning:"ריצה", labelStrength:"אימון כוח", labelSleep:"שינה",
-    weekSummaryTitle:"📊 סיכום שבועי", weekNoData:"אין עדיין נתונים לשבוע הנוכחי.",
+    weekSummaryTitle:"סיכום שבועי", weekNoData:"אין עדיין נתונים לשבוע הנוכחי.",
     daysWithData:"ימים עם נתונים", day:"יום", days:"ימים",
     avgDaily:" (ממוצע יומי)", strengthWeekSessions:"אימוני כוח השבוע", strengthWeekSimple:"אימונים השבוע",
     saving:"שומר...", savedCloud:"✓ נשמר בענן", saveError:"שגיאה בשמירה: ",
@@ -342,9 +361,9 @@ const I18N = {
     userBlocked:"המשתמש חסום. פנה למנהל.",
   },
   en: {
-    prevDay:"◀ Previous day", nextDay:"Next day ▶", saveDay:"💾 Save day",
-    tabBreakfast:"🌅 Breakfast", tabLunch:"☀️ Lunch", tabDinner:"🌙 Dinner", tabExtra:"🍪 Snack", tabActivity:"🏋️ Workout", tabWeek:"📊 Weekly Summary",
-    instructionText:"👉 Pick a food in each row, type the amount in grams — values fill in automatically. Don't forget to click \"Save day\" when done.",
+    prevDay:"◀ Previous day", nextDay:"Next day ▶", saveDay:"Save day",
+    tabBreakfast:"Breakfast", tabLunch:"Lunch", tabDinner:"Dinner", tabExtra:"Snack", tabActivity:"Workout", tabWeek:"Weekly Summary",
+    instructionText:"👉 Pick a food in each row, type the amount in grams, and click \"Save day\" when done.",
     dailyTotalTitle:"Daily Total", logout:"Log out", hello:"Hello", appTitle:"eWay",
     greetBreakfast:"🌅 Good morning! Time for breakfast", greetLunch:"☀️ Enjoy! Time for lunch",
     greetDinner:"🌙 Good evening! Time for dinner", greetExtra:"🍪 Logging a snack / extra meal",
@@ -352,11 +371,11 @@ const I18N = {
     mealBreakfast:"Breakfast", mealLunch:"Lunch", mealDinner:"Dinner", mealExtra:"Extra meal / Snack",
     colFood:"Food", colQty:"Amount (g)", colKcal:"Calories", colProtein:"Protein", colFat:"Fat", colCarb:"Carbs",
     addRow:"+ Add row", totalFor:"Total for ", selectFood:"— Select food —",
-    activityTitle:"🏋️ Workout", noActivities:"No activities set up for you yet. Contact your admin to enable workout tracking.",
+    activityTitle:"Workout", noActivities:"No activities set up for you yet. Contact your admin to enable workout tracking.",
     colActivity:"Activity", colAmount:"Amount / Distance",
     actSteps:"🚶 Steps", actRunning:"🏃 Running", actStrength:"🏋️ Strength training",
     phSteps:"Step count", phKm:"km", trainedToday:"Trained today",
-    sleepTitle:"🛏️ Sleep", sleepBedtime:"Bedtime", sleepWake:"Wake time", sleepDefault:"— hours", sleepHoursLabel:"hours of sleep",
+    sleepTitle:"Sleep", sleepBedtime:"Bedtime", sleepWake:"Wake time", sleepDefault:"— hours", sleepHoursLabel:"hours of sleep",
     labelKcal:"Calories (target)", labelFat:"Fat (target)", labelProtein:"Protein (target)", labelCarb:"Carbs (target)",
     labelWeightRemainLoss:"Left to lose", labelWeightRemainGain:"Left to gain", labelWeightGoalReached:"Weight target",
     weightAchieved:"🎉 Reached",
@@ -365,7 +384,7 @@ const I18N = {
     weightJourneyLabel:"Progress to target weight",
     doneToday:"✓ Done today", notDoneToday:"Not done today",
     labelSteps:"Steps", labelRunning:"Running", labelStrength:"Strength training", labelSleep:"Sleep",
-    weekSummaryTitle:"📊 Weekly Summary", weekNoData:"No data yet for this week.",
+    weekSummaryTitle:"Weekly Summary", weekNoData:"No data yet for this week.",
     daysWithData:"days with data", day:"day", days:"days",
     avgDaily:" (daily avg)", strengthWeekSessions:"Strength sessions this week", strengthWeekSimple:"sessions this week",
     saving:"Saving...", savedCloud:"✓ Saved to cloud", saveError:"Save error: ",
@@ -387,7 +406,8 @@ function applyStaticTranslations(){
   const setText = (id, key) => { const el = document.getElementById(id); if(el) el.textContent = t(key); };
   setText("prevDay", "prevDay");
   setText("nextDay", "nextDay");
-  setText("saveBtn", "saveDay");
+  const saveBtnSpan = document.querySelector("#saveBtn span");
+  if(saveBtnSpan) saveBtnSpan.textContent = t("saveDay");
   setText("instructionText", "instructionText");
   setText("dailyTotalTitle", "dailyTotalTitle");
   setText("logoutBtn", "logout");
@@ -396,7 +416,9 @@ function applyStaticTranslations(){
   const tabMap = {breakfast:"tabBreakfast", lunch:"tabLunch", dinner:"tabDinner", extra:"tabExtra", activity:"tabActivity", week:"tabWeek"};
   Object.keys(tabMap).forEach(tabId=>{
     const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-    if(btn) btn.textContent = t(tabMap[tabId]);
+    const span = btn ? btn.querySelector("span") : null;
+    if(span) span.textContent = t(tabMap[tabId]);
+    else if(btn) btn.textContent = t(tabMap[tabId]);
   });
 }
 
@@ -578,6 +600,35 @@ function calcTargetWeight(heightCm, age, gender){
   const high = bmiHigh * h * h;
   const mid = (low + high) / 2;
   return {low: Math.round(low*10)/10, high: Math.round(high*10)/10, target: Math.round(mid*10)/10};
+}
+
+const ICONS = {
+  sunrise: `<circle cx="12" cy="13" r="4"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="4" y1="13" x2="6.5" y2="13"/><line x1="17.5" y1="13" x2="20" y2="13"/><line x1="5" y1="20" x2="19" y2="20"/>`,
+  sun: `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`,
+  moon: `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 12 12.79z"/>`,
+  cookie: `<circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none"/>`,
+  dumbbell: `<rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/>`,
+  barchart: `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>`,
+  clipboard: `<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/>`,
+  trending: `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>`,
+  filetext: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>`,
+  save: `<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>`,
+  edit: `<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>`,
+  trash: `<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>`,
+  x: `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+  walk: `<ellipse cx="9" cy="7" rx="2" ry="3"/><ellipse cx="15" cy="16" rx="2" ry="3"/>`,
+  speedlines: `<line x1="3" y1="17" x2="9" y2="17"/><line x1="3" y1="12" x2="13" y2="12"/><line x1="3" y1="7" x2="17" y2="7"/>`,
+  bed: `<path d="M2 18v-7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v7"/><path d="M2 18h20"/><path d="M6 11V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5"/>`,
+  search: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>`,
+  ban: `<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>`,
+  check: `<polyline points="20 6 9 17 4 12"/>`,
+  plus: `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`,
+  download: `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>`,
+};
+function icon(name, size){
+  size = size || 16;
+  const paths = ICONS[name] || "";
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;">${paths}</svg>`;
 }
 
 function todayStr(){
@@ -877,7 +928,7 @@ function buildWeightChartSVG(entries, target){
   const dots = asc.map((e,i)=> `<circle cx="${xFor(i)}" cy="${yFor(e.weight)}" r="3" fill="#2f6b5e"/>`).join("");
   const firstLabel = `<text x="${padL}" y="${h-4}" font-size="9" fill="#5b6b66">${asc[0].date.slice(5)}</text>`;
   const lastLabel = asc.length>1 ? `<text x="${w-padR}" y="${h-4}" font-size="9" fill="#5b6b66" text-anchor="end">${asc[asc.length-1].date.slice(5)}</text>` : "";
-  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;background:#fafcfa;border:1px solid var(--grid);border-radius:8px;">
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);">
     ${targetLine}
     <polyline points="${points}" fill="none" stroke="#2f6b5e" stroke-width="2"/>
     ${dots}
@@ -933,7 +984,7 @@ async function renderAdminUserList(){
     }
     list.innerHTML = users.map(u=>{
       const daysInfo = daysSinceLabel(u.lastWeightDate);
-      const blockedTag = u.blocked ? `<span style="font-size:.72rem;font-weight:700;color:#b04a4a;"> 🚫 חסום</span>` : "";
+      const blockedTag = u.blocked ? `<span style="font-size:.72rem;font-weight:700;color:#b04a4a;"> ${icon("ban",12)} חסום</span>` : "";
       const isOnline = u.lastActive && (Date.now() - u.lastActive) < ONLINE_THRESHOLD_MS;
       const statusDot = `<span title="${isOnline ? 'מחובר כרגע' : 'לא מחובר'}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${isOnline ? '#2e7d4f' : '#b04a4a'};margin-left:6px;"></span>`;
       return `<div class="admin-user-chip" data-code="${u.code}" style="${u.blocked ? 'opacity:.6;' : ''}">${statusDot}${u.name} <span style="color:var(--muted);font-size:.75rem;">(${u.code})</span> <span style="font-size:.72rem;font-weight:600;color:${daysInfo.color};">${daysInfo.text}</span>${blockedTag}</div>`;
@@ -969,7 +1020,7 @@ async function renderWeightLog(code, userData){
       const diffTxt = diff===null ? "—" : (diff>=0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)) + " ק״ג";
       return `<tr data-date="${en.date}">
         <td>${en.date}</td><td>${en.weight}</td><td>${en.waist!=null ? en.waist : '—'}</td><td>${diffTxt}</td>
-        <td><button class="delrow weight-del" data-date="${en.date}" title="מחק מדידה">✕</button></td>
+        <td><button class="delrow weight-del" data-date="${en.date}" title="מחק מדידה">${icon("x",13)}</button></td>
       </tr>`;
     }).join("");
     body.querySelectorAll(".weight-del").forEach(btn=>{
@@ -1163,9 +1214,9 @@ async function showAdminUserPanel(code, label, userData){
         </div>
         ` : ''}
         <div style="margin-top:14px;display:flex;gap:8px;">
-          <button class="addrow" id="editUserBtn-${code}">✎ ערוך פרטים</button>
-          <button class="addrow" id="blockUserBtn-${code}" style="border-color:#c77b2b;color:#c77b2b;">${userData.blocked ? '✅ הסר חסימה' : '🚫 חסום משתמש'}</button>
-          <button class="addrow" id="deleteUserBtn-${code}" style="border-color:#b04a4a;color:#b04a4a;">🗑 מחק משתמש</button>
+          <button class="addrow" id="editUserBtn-${code}">${icon("edit",14)} ערוך פרטים</button>
+          <button class="addrow" id="blockUserBtn-${code}" style="border-color:#c77b2b;color:#c77b2b;">${userData.blocked ? icon("check",14)+' הסר חסימה' : icon("ban",14)+' חסום משתמש'}</button>
+          <button class="addrow" id="deleteUserBtn-${code}" style="border-color:#b04a4a;color:#b04a4a;">${icon("trash",14)} מחק משתמש</button>
         </div>
         <div id="userActionMsg-${code}" style="font-size:.82rem;margin-top:6px;"></div>
       </div>
@@ -1193,7 +1244,7 @@ async function showAdminUserPanel(code, label, userData){
           <input type="number" id="editSleepTarget-${code}" placeholder="יעד שעות שינה" value="${userData.sleepTarget||''}" step="0.5" style="width:140px;">
         </div>
         <div style="margin-top:8px;display:flex;gap:8px;">
-          <button class="addrow" id="saveEditBtn-${code}">💾 שמור שינויים</button>
+          <button class="addrow" id="saveEditBtn-${code}">${icon("save",14)} שמור שינויים</button>
           <button class="addrow" id="cancelEditBtn-${code}" style="border-color:var(--muted);color:var(--muted);">ביטול</button>
         </div>
       </div>
@@ -1201,39 +1252,65 @@ async function showAdminUserPanel(code, label, userData){
   `;
   panel.innerHTML = `<section>
     <h2><span>${label}</span></h2>
-    ${statsHtml}
-    <div style="padding:14px 16px;border-bottom:1px solid var(--grid);">
-      <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📐 WTH Ratio — יחס היקף מתניים לגובה</div>
-      ${whtr ? `
-        <div class="stat-grid">
-          <div class="stat-cell"><div class="stat-label">היקף מתניים נוכחי</div><div class="stat-value">${currentWaistVal} ס״מ</div></div>
-          <div class="stat-cell"><div class="stat-label">יחס (WHtR)</div><div class="stat-value">${whtr.ratio}</div></div>
-          <div class="stat-cell"><div class="stat-label">מצב</div><div class="stat-value" style="color:${whtr.color};">${whtr.label}</div></div>
-        </div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:8px;">לפי הנחיות NICE: תקין 0.4-0.49 · סיכון מוגבר 0.5-0.59 · סיכון גבוה 0.6+</div>
-      ` : `<div style="color:var(--muted);font-size:.85rem;">אין מספיק נתונים (היקף מתניים וגובה) לחישוב.</div>`}
+    <div class="tab-bar" style="padding:12px 16px 0;margin-bottom:0;" id="subTabBar-${code}">
+      <button class="tab-btn subtab-btn" data-subtab="overview" style="--tabColor:var(--teal);">${icon("clipboard")} סקירה</button>
+      <button class="tab-btn subtab-btn" data-subtab="weight" style="--tabColor:var(--dark);">${icon("trending")} משקל</button>
+      <button class="tab-btn subtab-btn" data-subtab="history" style="--tabColor:var(--accent);">${icon("filetext")} היסטוריה</button>
     </div>
-    <div style="padding:14px 16px;border-bottom:1px solid var(--grid);">
-      <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📈 מעקב משקל והיקף מתניים</div>
-      <div id="weightChart-${code}" style="margin-bottom:10px;"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
-        <input type="date" id="weightDate-${code}" style="width:auto;">
-        <input type="number" id="weightValue-${code}" placeholder="משקל (ק״ג)" step="0.1" style="width:120px;">
-        <input type="number" id="waistValue-${code}" placeholder="היקף מתניים (ס״מ)" step="0.5" style="width:150px;">
-        <button class="addrow" id="addWeightBtn-${code}">+ הוסף מדידה</button>
-        <span id="weightMsg-${code}" style="font-size:.8rem;"></span>
+
+    <div id="subpanel-overview-${code}">
+      ${statsHtml}
+      <div style="padding:14px 16px;">
+        <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">📐 WTH Ratio — יחס היקף מתניים לגובה</div>
+        ${whtr ? `
+          <div class="stat-grid">
+            <div class="stat-cell"><div class="stat-label">היקף מתניים נוכחי</div><div class="stat-value">${currentWaistVal} ס״מ</div></div>
+            <div class="stat-cell"><div class="stat-label">יחס (WHtR)</div><div class="stat-value">${whtr.ratio}</div></div>
+            <div class="stat-cell"><div class="stat-label">מצב</div><div class="stat-value" style="color:${whtr.color};">${whtr.label}</div></div>
+          </div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:8px;">לפי הנחיות NICE: תקין 0.4-0.49 · סיכון מוגבר 0.5-0.59 · סיכון גבוה 0.6+</div>
+        ` : `<div style="color:var(--muted);font-size:.85rem;">אין מספיק נתונים (היקף מתניים וגובה) לחישוב.</div>`}
       </div>
-      <table>
-        <thead><tr><th>תאריך</th><th>משקל (ק״ג)</th><th>היקף מתניים (ס״מ)</th><th>הפרש מהיעד</th><th></th></tr></thead>
-        <tbody id="weightLogBody-${code}"><tr><td colspan="5">טוען...</td></tr></tbody>
-      </table>
     </div>
-    <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <span style="font-size:.75rem;color:var(--muted);">🔴 חריגה משמעותית מהיעד &nbsp; 🟡 מתחת ליעד באופן משמעותי</span>
-      <button class="addrow" id="exportCsvBtn-${code}">⬇️ ייצוא CSV (מזון) למשתמש זה</button>
+
+    <div id="subpanel-weight-${code}" style="display:none;">
+      <div style="padding:14px 16px;">
+        <div id="weightChart-${code}" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+          <input type="date" id="weightDate-${code}" style="width:auto;">
+          <input type="number" id="weightValue-${code}" placeholder="משקל (ק״ג)" step="0.1" style="width:120px;">
+          <input type="number" id="waistValue-${code}" placeholder="היקף מתניים (ס״מ)" step="0.5" style="width:150px;">
+          <button class="addrow" id="addWeightBtn-${code}">+ הוסף מדידה</button>
+          <span id="weightMsg-${code}" style="font-size:.8rem;"></span>
+        </div>
+        <table>
+          <thead><tr><th>תאריך</th><th>משקל (ק״ג)</th><th>היקף מתניים (ס״מ)</th><th>הפרש מהיעד</th><th></th></tr></thead>
+          <tbody id="weightLogBody-${code}"><tr><td colspan="5">טוען...</td></tr></tbody>
+        </table>
+      </div>
     </div>
-    <table><thead><tr id="adminHistHead"><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="5">טוען...</td></tr></tbody></table>
+
+    <div id="subpanel-history-${code}" style="display:none;">
+      <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span style="font-size:.75rem;color:var(--muted);">🔴 חריגה משמעותית מהיעד &nbsp; 🟡 מתחת ליעד באופן משמעותי</span>
+        <button class="addrow" id="exportCsvBtn-${code}">${icon("download",14)} ייצוא CSV (מזון) למשתמש זה</button>
+      </div>
+      <table><thead><tr id="adminHistHead"><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="5">טוען...</td></tr></tbody></table>
+    </div>
   </section>`;
+
+  document.getElementById(`subTabBar-${code}`).querySelectorAll(".subtab-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      ["overview","weight","history"].forEach(key=>{
+        const el = document.getElementById(`subpanel-${key}-${code}`);
+        if(el) el.style.display = (key === btn.dataset.subtab) ? "block" : "none";
+      });
+      document.getElementById(`subTabBar-${code}`).querySelectorAll(".subtab-btn").forEach(b=>{
+        b.classList.toggle("active", b === btn);
+      });
+    });
+  });
+  document.getElementById(`subTabBar-${code}`).querySelector('.subtab-btn[data-subtab="overview"]').classList.add("active");
 
   const acts = userData.activities || {};
   const headRow = document.getElementById("adminHistHead");
@@ -1292,7 +1369,7 @@ async function showAdminUserPanel(code, label, userData){
     if(btn.dataset.confirm !== "1"){
       btn.dataset.confirm = "1";
       btn.textContent = "בטוח? לחץ שוב למחיקה סופית";
-      setTimeout(()=>{ btn.dataset.confirm=""; btn.textContent="🗑 מחק משתמש"; }, 4000);
+      setTimeout(()=>{ btn.dataset.confirm=""; btn.innerHTML=icon("trash",14)+" מחק משתמש"; }, 4000);
       return;
     }
     try{
@@ -1576,7 +1653,7 @@ function renderWeekSummary(){
   if(!stats){
     container.innerHTML = `
       <div class="daily-total">
-        <h2>${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel}</span></h2>
+        <h2>${icon("barchart")} ${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel}</span></h2>
         <div style="padding:10px 4px;color:#cfe0da;font-size:.9rem;">${t("weekNoData")}</div>
       </div>`;
     return;
@@ -1624,7 +1701,7 @@ function renderWeekSummary(){
 
   container.innerHTML = `
     <div class="daily-total">
-      <h2>${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel} · ${stats.days} ${stats.days===1?t("day"):t("days")} ${t("daysWithData")}</span></h2>
+      <h2>${icon("barchart")} ${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel} · ${stats.days} ${stats.days===1?t("day"):t("days")} ${t("daysWithData")}</span></h2>
       <div class="dt-grid">${cardsHtml}</div>
     </div>
   `;
@@ -1703,7 +1780,7 @@ function computeSleepHours(bedtime, wake){
 function buildSleepSection(){
   const section = document.createElement("section");
   section.innerHTML = `
-    <h2 style="background:var(--dark);"><span>${t("sleepTitle")}</span><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span></h2>
+    <h2 style="background:var(--dark);"><span>${icon("bed")} ${t("sleepTitle")}</span><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span></h2>
     <div style="padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepBedtime")}</label><input type="time" id="sleepBedtime"></div>
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepWake")}</label><input type="time" id="sleepWake"><span id="sleepWakeComputed" style="font-size:.78rem;color:var(--teal);font-weight:600;margin-right:8px;"></span></div>
@@ -1752,7 +1829,7 @@ function buildActivitySection(){
   if(!container) return;
   const acts = (currentUser && currentUser.activities) || {};
   if(!acts.steps && !acts.running && !acts.strength){
-    container.innerHTML = `<section><h2 style="background:var(--accent);"><span>${t("activityTitle")}</span></h2>
+    container.innerHTML = `<section><h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span></h2>
       <div style="padding:20px;text-align:center;color:var(--muted);font-size:.9rem;">${t("noActivities")}</div>
     </section>`;
     return;
@@ -1778,7 +1855,7 @@ function buildActivitySection(){
   }
   container.innerHTML = `
     <section>
-      <h2 style="background:var(--accent);"><span>${t("activityTitle")}</span></h2>
+      <h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span></h2>
       <table>
         <thead><tr><th style="width:35%">${t("colActivity")}</th><th>${t("colAmount")}</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -1852,7 +1929,7 @@ function buildRow(mealId, saved){
     <td><select class="food-select">${foodOptions(saved ? saved.name : "")}</select></td>
     <td><input type="number" class="qty" min="0" step="1" placeholder="0" value="${saved ? saved.qty : ''}"></td>
     <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
-    <td><button class="delrow" title="מחק שורה">✕</button></td>
+    <td><button class="delrow" title="מחק שורה">${icon("x",13)}</button></td>
   `;
   tr.querySelector(".food-select").addEventListener("change", ()=>{
     const name = tr.querySelector(".food-select").value;
@@ -2104,7 +2181,7 @@ async function searchUSDA(query){
     }
     resultsEl.innerHTML = foods.map((food, idx)=>{
       const nutrients = extractUSDANutrients(food);
-      return `<div class="usda-result" data-idx="${idx}" style="padding:8px 10px;border:1px solid var(--grid);border-radius:6px;margin-bottom:6px;cursor:pointer;font-size:.85rem;">
+      return `<div class="usda-result" data-idx="${idx}" style="padding:8px 10px;border:1px solid var(--grid);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;font-size:.85rem;">
         <div style="font-weight:600;color:var(--dark);">${food.description}</div>
         <div style="color:var(--muted);font-size:.78rem;margin-top:2px;">
           ל-100 גר': ${nutrients.kcal!==null?Math.round(nutrients.kcal):'—'} קלוריות · ${nutrients.p!==null?nutrients.p.toFixed(1):'—'} חלבון · ${nutrients.f!==null?nutrients.f.toFixed(1):'—'} שומן · ${nutrients.c!==null?nutrients.c.toFixed(1):'—'} פחמימה
@@ -2202,7 +2279,7 @@ function renderRefList(filter){
         <td>${food.p}</td>
         <td>${food.f}</td>
         <td>${food.c}</td>
-        <td>${editable ? `<button class="delrow ref-edit-btn" data-idx="${idx}" title="ערוך" style="color:var(--teal);font-size:1rem;">✎</button>` : ""}</td>
+        <td>${editable ? `<button class="delrow ref-edit-btn" data-idx="${idx}" title="ערוך" style="color:var(--teal);">${icon("edit",14)}</button>` : ""}</td>
       </tr>`;
     }).join("");
   body.querySelectorAll(".ref-edit-btn").forEach(btn=>{
@@ -2224,8 +2301,8 @@ function openRefEdit(idx){
     <td><input type="number" id="refEditF" value="${food.f}" step="0.1" style="width:60px;"></td>
     <td><input type="number" id="refEditC" value="${food.c}" step="0.1" style="width:60px;"></td>
     <td style="white-space:nowrap;">
-      <button id="refSaveBtn" style="color:var(--teal);border:none;background:none;cursor:pointer;font-size:1rem;">💾</button>
-      <button id="refCancelBtn" style="color:var(--muted);border:none;background:none;cursor:pointer;font-size:1rem;">✕</button>
+      <button id="refSaveBtn" style="color:var(--teal);border:none;background:none;cursor:pointer;">${icon("save",15)}</button>
+      <button id="refCancelBtn" style="color:var(--muted);border:none;background:none;cursor:pointer;">${icon("x",15)}</button>
     </td>
   `;
   document.getElementById("refCancelBtn").addEventListener("click", ()=> renderRefList(document.getElementById("refFilter").value));
