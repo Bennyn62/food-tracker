@@ -184,7 +184,7 @@
   </div>
 
   <div id="appArea">
-    <h1 id="appTitle">מעקב תזונה יומי</h1>
+    <h1 id="appTitle">eWay מעקב תזונה יומי</h1>
     <div class="topbar">
       <div class="who" id="whoLabel"></div>
       <button id="logoutBtn">התנתקות</button>
@@ -1197,12 +1197,12 @@ async function showAdminUserPanel(code, label, userData){
   const statsHtml = `
     <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
-        <div class="stat-grid" style="flex-wrap:nowrap;overflow-x:auto;">
-          <div class="stat-cell"><div class="stat-label">🎂 גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">${userData.gender==='female' ? '♀ מין' : '♂ מין'}</div><div class="stat-value">${userData.gender==='female' ? 'נקבה' : 'זכר'}</div></div>
-          <div class="stat-cell"><div class="stat-label">⚖️ משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">📏 גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">📐 היקף מתניים מקורי</div><div class="stat-value">${originalWaist!=null ? originalWaist + ' ס״מ' : '—'}</div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.85rem;color:var(--text);padding:4px 2px 12px;">
+          <span>🎂 <strong>גיל:</strong> ${userData.age || '—'}</span>
+          <span>${userData.gender==='female' ? '♀' : '♂'} <strong>מין:</strong> ${userData.gender==='female' ? 'נקבה' : 'זכר'}</span>
+          <span>⚖️ <strong>משקל מקורי:</strong> ${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</span>
+          <span>📏 <strong>גובה:</strong> ${userData.height ? userData.height + ' ס״מ' : '—'}</span>
+          <span>📐 <strong>מתניים מקורי:</strong> ${originalWaist!=null ? originalWaist + ' ס״מ' : '—'}</span>
         </div>
         <div class="stat-grid" style="margin-top:10px;">
           <div class="stat-cell"><div class="stat-label">🎯 נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
