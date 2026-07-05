@@ -1180,8 +1180,7 @@ async function showAdminUserPanel(code, label, userData){
   if(tw && userData.weight){
     const diff = Math.round((userData.weight - tw.target)*10)/10;
     if(Math.abs(diff) < 0.3) weightRemainingHtml = `🎉 היעד הושג`;
-    else if(diff > 0) weightRemainingHtml = `${diff} ק״ג להורדה`;
-    else weightRemainingHtml = `${Math.abs(diff)} ק״ג להעלאה`;
+    else weightRemainingHtml = (diff > 0 ? `+${diff}` : `${diff}`) + ` ק״ג`;
   }
 
   let weeksToGoalHtml = "—";
@@ -1191,19 +1190,21 @@ async function showAdminUserPanel(code, label, userData){
       weeksToGoalHtml = "🎉 היעד הושג";
     }else{
       const weeks = Math.round(totalDiff / WEEKLY_WEIGHT_LOSS_TARGET);
-      weeksToGoalHtml = `~${weeks} שבועות`;
+      weeksToGoalHtml = `${weeks} שבועות`;
     }
   }
 
   const statsHtml = `
     <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
-        <div class="stat-grid">
-          <div class="stat-cell"><div class="stat-label">📏 גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
-          <div class="stat-cell"><div class="stat-label">${userData.gender==='female' ? '♀ מין' : '♂ מין'}</div><div class="stat-value">${userData.gender==='female' ? 'נקבה' : 'זכר'}</div></div>
+        <div class="stat-grid" style="flex-wrap:nowrap;overflow-x:auto;">
           <div class="stat-cell"><div class="stat-label">🎂 גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">${userData.gender==='female' ? '♀ מין' : '♂ מין'}</div><div class="stat-value">${userData.gender==='female' ? 'נקבה' : 'זכר'}</div></div>
           <div class="stat-cell"><div class="stat-label">⚖️ משקל מקורי</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell"><div class="stat-label">📏 גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
           <div class="stat-cell"><div class="stat-label">📐 היקף מתניים מקורי</div><div class="stat-value">${originalWaist!=null ? originalWaist + ' ס״מ' : '—'}</div></div>
+        </div>
+        <div class="stat-grid" style="margin-top:10px;">
           <div class="stat-cell"><div class="stat-label">🎯 נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
           <div class="stat-cell"><div class="stat-label">⏱ זמן מוערך ליעד</div><div class="stat-value accent">${weeksToGoalHtml}</div></div>
         </div>
