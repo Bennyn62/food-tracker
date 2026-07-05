@@ -139,6 +139,10 @@
 
   .stat-grid{display:flex;gap:10px;flex-wrap:wrap;}
   .stat-cell{min-width:100px;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:10px 14px;text-align:center;}
+  .stat-row-compact{display:flex;flex-wrap:nowrap;gap:5px;margin-bottom:10px;}
+  .stat-cell-sm{flex:1;min-width:0;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:6px 3px;text-align:center;overflow:hidden;}
+  .stat-cell-sm .stat-label{font-size:.6rem;color:var(--muted);margin-bottom:3px;font-weight:600;white-space:nowrap;}
+  .stat-cell-sm .stat-value{font-size:.78rem;font-weight:700;color:var(--dark);white-space:nowrap;}
   .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;font-weight:600;}
   .stat-value{font-size:1.1rem;font-weight:700;color:var(--dark);}
   .stat-value.accent{color:var(--teal);}
@@ -333,7 +337,7 @@ const I18N = {
     prevDay:"◀ יום קודם", nextDay:"יום הבא ▶", saveDay:"שמור יום",
     tabBreakfast:"בוקר", tabLunch:"צהריים", tabDinner:"ערב", tabExtra:"חטיף", tabActivity:"אימון", tabWeek:"סיכום שבועי",
     instructionText:'👉 בחר מזון בכל שורה, הקלד כמות בגרמים, ולחץ "שמור יום" בסיום.',
-    dailyTotalTitle:'סה"כ יומי', logout:"התנתקות", hello:"שלום", appTitle:"מעקב תזונה יומי",
+    dailyTotalTitle:'סה"כ יומי', logout:"התנתקות", hello:"שלום", appTitle:"eWay מעקב תזונה יומי",
     greetBreakfast:"🌅 בוקר טוב! זמן ארוחת הבוקר", greetLunch:"☀️ בתיאבון! זמן ארוחת הצהריים",
     greetDinner:"🌙 ערב טוב! זמן ארוחת הערב", greetExtra:"🍪 תיעוד חטיף / ארוחה נוספת",
     greetActivity:"💪 זמן טוב לתעד אימון", greetWeek:"📊 איך עבר עליך השבוע",
@@ -1197,12 +1201,12 @@ async function showAdminUserPanel(code, label, userData){
   const statsHtml = `
     <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
-        <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.85rem;color:var(--text);padding:4px 2px 12px;">
-          <span>🎂 <strong>גיל:</strong> ${userData.age || '—'}</span>
-          <span>${userData.gender==='female' ? '♀' : '♂'} <strong>מין:</strong> ${userData.gender==='female' ? 'נקבה' : 'זכר'}</span>
-          <span>⚖️ <strong>משקל מקורי:</strong> ${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</span>
-          <span>📏 <strong>גובה:</strong> ${userData.height ? userData.height + ' ס״מ' : '—'}</span>
-          <span>📐 <strong>מתניים מקורי:</strong> ${originalWaist!=null ? originalWaist + ' ס״מ' : '—'}</span>
+        <div class="stat-row-compact">
+          <div class="stat-cell-sm"><div class="stat-label">🎂 גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
+          <div class="stat-cell-sm"><div class="stat-label">${userData.gender==='female' ? '♀ מין' : '♂ מין'}</div><div class="stat-value">${userData.gender==='female' ? 'נקבה' : 'זכר'}</div></div>
+          <div class="stat-cell-sm"><div class="stat-label">⚖️ משקל</div><div class="stat-value">${originalWeight!=null ? originalWeight + ' ק״ג' : '—'}</div></div>
+          <div class="stat-cell-sm"><div class="stat-label">📏 גובה</div><div class="stat-value">${userData.height ? userData.height + ' ס״מ' : '—'}</div></div>
+          <div class="stat-cell-sm"><div class="stat-label">📐 מתניים</div><div class="stat-value">${originalWaist!=null ? originalWaist + ' ס״מ' : '—'}</div></div>
         </div>
         <div class="stat-grid" style="margin-top:10px;">
           <div class="stat-cell"><div class="stat-label">🎯 נותר למשקל יעד</div><div class="stat-value accent">${weightRemainingHtml}</div></div>
