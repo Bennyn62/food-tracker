@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>eWay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -28,18 +30,16 @@
   #loginGate{max-width:380px;margin:40px auto;background:#fff;border:1px solid var(--grid);border-radius:12px;padding:28px 24px;text-align:center;}
   #loginGate h2{color:var(--dark);margin-top:0;}
   .eway-logo{
-    text-align:center;font-size:2.6rem;font-weight:800;letter-spacing:-1px;
-    margin-bottom:2px;line-height:1;direction:ltr;
+    text-align:center;font-family:'Playfair Display', Georgia, serif;
+    font-size:3.4rem;font-weight:800;letter-spacing:0;
+    margin-bottom:8px;line-height:1;direction:ltr;
   }
   .eway-e{
-    background:linear-gradient(90deg, var(--teal), var(--accent));
-    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-style:italic;font-weight:500;color:#a8503f;
   }
   .eway-way{
-    background:linear-gradient(90deg, var(--teal) 20%, var(--accent) 90%);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
+    color:#1a1a1a;font-weight:800;
   }
-  .eway-arrow{color:var(--accent);font-size:1.6rem;font-weight:600;margin-right:2px;}
   .eway-tagline{
     text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:18px;letter-spacing:.2px;
   }
@@ -156,7 +156,7 @@
 
   <div id="loginGate" dir="ltr" lang="en">
     <div class="eway-logo">
-      <span class="eway-e">e</span><span class="eway-way">Way</span><span class="eway-arrow">→</span>
+      <span class="eway-e">e</span><span class="eway-way">Way</span>
     </div>
     <div class="eway-tagline">Eat way younger you.</div>
     <div class="sub" style="margin-bottom:0;">Enter the personal code you received to log in</div>
