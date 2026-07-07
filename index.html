@@ -160,6 +160,18 @@
   .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;}
   .adduser-grid button{background:var(--teal);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
+  .activity-group-col{
+    flex:1;min-width:130px;display:flex;flex-direction:column;gap:8px;
+    background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:10px 12px;
+  }
+  .activity-group-col label{font-size:.85rem;color:var(--text);display:flex;align-items:center;gap:6px;font-weight:600;}
+  .activity-group-col input[type=number]{width:100%;}
+  .setting-group{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 14px;}
+  .setting-card{flex:1;min-width:105px;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:9px 8px;text-align:center;}
+  .setting-card label{display:flex;align-items:center;justify-content:center;gap:4px;font-size:.78rem;font-weight:600;color:var(--dark);margin-bottom:6px;cursor:pointer;white-space:nowrap;}
+  .setting-card label input[type=checkbox]{width:auto;margin:0;}
+  .setting-card input[type=number]{width:100%;font-size:.78rem;padding:5px 4px;text-align:center;}
+  .setting-card .setting-name{font-size:.78rem;font-weight:600;color:var(--dark);margin-bottom:6px;}
   .activity-toggle-row label{display:flex;align-items:center;gap:4px;cursor:pointer;}
   .activity-toggle-row input[type=number]{padding:6px 8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;}
   @media (max-width:700px){
@@ -267,23 +279,40 @@
               <option value="en">English</option>
             </select>
           </div>
-          <div class="activity-toggle-row">
-            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
-            <label><input type="checkbox" id="newUserActSteps" checked> צעדים</label>
-            <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500" style="width:140px;">
-            <label><input type="checkbox" id="newUserActRunning"> ריצה</label>
-            <input type="number" id="newUserRunningTarget" placeholder="יעד ק״מ יומי" min="0" step="0.5" style="width:130px;">
-            <label><input type="checkbox" id="newUserActStrength"> אימון כוח</label>
-            <input type="number" id="newUserStrengthTarget" placeholder="יעד אימונים לשבוע" min="0" step="1" style="width:150px;">
+          <div class="tab-bar" id="addUserSubTabBar" style="margin:0 16px 16px;">
+            <button class="tab-btn addsubtab-btn active" data-addsubtab="activity" style="--tabColor:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg> פעילות</button>
+            <button class="tab-btn addsubtab-btn" data-addsubtab="health" style="--tabColor:#8a3a52;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> בריאות</button>
           </div>
-          <div class="activity-toggle-row">
-            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
-            <input type="number" id="newUserSleepTarget" placeholder="יעד שעות שינה" min="0" step="0.5" style="width:140px;">
+
+          <div id="addUserSubpanel-activity" class="addsubpanel">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;padding:0 16px 16px;">
+              <div class="activity-group-col">
+                <label><input type="checkbox" id="newUserActSteps" checked> צעדים</label>
+                <input type="number" id="newUserStepsTarget" placeholder="יעד צעדים יומי" min="0" step="500">
+              </div>
+              <div class="activity-group-col">
+                <label><input type="checkbox" id="newUserActRunning"> ריצה</label>
+                <input type="number" id="newUserRunningTarget" placeholder="יעד ק״מ יומי" min="0" step="0.5">
+              </div>
+              <div class="activity-group-col">
+                <label><input type="checkbox" id="newUserActStrength"> אימון כוח</label>
+                <input type="number" id="newUserStrengthTarget" placeholder="יעד אימונים לשבוע" min="0" step="1">
+              </div>
+            </div>
           </div>
-          <div class="activity-toggle-row">
-            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">בריאות:</span>
-            <label><input type="checkbox" id="newUserTrackSugar"> מעקב סוכר בדם</label>
+
+          <div id="addUserSubpanel-health" class="addsubpanel" style="display:none;">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;padding:0 16px 16px;">
+              <div class="activity-group-col">
+                <span style="font-weight:600;color:var(--dark);font-size:.9rem;">🛏️ שינה</span>
+                <input type="number" id="newUserSleepTarget" placeholder="יעד שעות שינה" min="0" step="0.5">
+              </div>
+              <div class="activity-group-col">
+                <label><input type="checkbox" id="newUserTrackSugar"> מעקב סוכר בדם</label>
+              </div>
+            </div>
           </div>
+
           <!-- future target/definition sections should be added above this line -->
           <div style="padding:14px 16px;">
             <button id="addUserBtn" class="btn-save" style="padding:10px 24px;border-radius:var(--radius-sm);">+ הוסף משתמש</button>
@@ -1261,22 +1290,38 @@ async function showAdminUserPanel(code, label, userData){
           <div class="af-field"><label>גיל</label><input type="number" id="editAge-${code}" value="${userData.age||''}"></div>
           <div class="af-field"><label>שפה</label><select id="editLanguage-${code}"><option value="he" ${userData.language!=='en'?'selected':''}>עברית</option><option value="en" ${userData.language==='en'?'selected':''}>English</option></select></div>
         </div>
-        <div class="activity-toggle-row" style="padding:10px 0;">
-          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">פעילויות:</span>
-          <label><input type="checkbox" id="editActSteps-${code}" ${userData.activities && userData.activities.steps ? 'checked':''}> צעדים</label>
-          <input type="number" id="editStepsTarget-${code}" placeholder="יעד צעדים יומי" value="${userData.stepsTarget||''}" style="width:140px;">
-          <label><input type="checkbox" id="editActRunning-${code}" ${userData.activities && userData.activities.running ? 'checked':''}> ריצה</label>
-          <input type="number" id="editRunningTarget-${code}" placeholder="יעד ק״מ יומי" value="${userData.runningTarget||''}" step="0.5" style="width:130px;">
-          <label><input type="checkbox" id="editActStrength-${code}" ${userData.activities && userData.activities.strength ? 'checked':''}> אימון כוח</label>
-          <input type="number" id="editStrengthTarget-${code}" placeholder="יעד אימונים לשבוע" value="${userData.strengthWeeklyTarget||''}" style="width:150px;">
+        <div class="tab-bar" id="editSubTabBar-${code}" style="margin:10px 0 0;">
+          <button class="tab-btn editsubtab-btn active" data-editsubtab="activity" data-code="${code}" style="--tabColor:var(--accent);">${icon("dumbbell",14)} פעילות</button>
+          <button class="tab-btn editsubtab-btn" data-editsubtab="health" data-code="${code}" style="--tabColor:#8a3a52;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> בריאות</button>
         </div>
-        <div class="activity-toggle-row">
-          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
-          <input type="number" id="editSleepTarget-${code}" placeholder="יעד שעות שינה" value="${userData.sleepTarget||''}" step="0.5" style="width:140px;">
+
+        <div id="editSubpanel-activity-${code}" class="editsubpanel">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:10px;">
+            <div class="activity-group-col">
+              <label><input type="checkbox" id="editActSteps-${code}" ${userData.activities && userData.activities.steps ? 'checked':''}> צעדים</label>
+              <input type="number" id="editStepsTarget-${code}" placeholder="יעד צעדים יומי" value="${userData.stepsTarget||''}">
+            </div>
+            <div class="activity-group-col">
+              <label><input type="checkbox" id="editActRunning-${code}" ${userData.activities && userData.activities.running ? 'checked':''}> ריצה</label>
+              <input type="number" id="editRunningTarget-${code}" placeholder="יעד ק״מ יומי" value="${userData.runningTarget||''}" step="0.5">
+            </div>
+            <div class="activity-group-col">
+              <label><input type="checkbox" id="editActStrength-${code}" ${userData.activities && userData.activities.strength ? 'checked':''}> אימון כוח</label>
+              <input type="number" id="editStrengthTarget-${code}" placeholder="יעד אימונים לשבוע" value="${userData.strengthWeeklyTarget||''}">
+            </div>
+          </div>
         </div>
-        <div class="activity-toggle-row">
-          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">בריאות:</span>
-          <label><input type="checkbox" id="editTrackSugar-${code}" ${userData.trackSugar ? 'checked':''}> מעקב סוכר בדם</label>
+
+        <div id="editSubpanel-health-${code}" class="editsubpanel" style="display:none;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:10px;">
+            <div class="activity-group-col">
+              <span style="font-weight:600;color:var(--dark);font-size:.9rem;">🛏️ שינה</span>
+              <input type="number" id="editSleepTarget-${code}" placeholder="יעד שעות שינה" value="${userData.sleepTarget||''}" step="0.5">
+            </div>
+            <div class="activity-group-col">
+              <label><input type="checkbox" id="editTrackSugar-${code}" ${userData.trackSugar ? 'checked':''}> מעקב סוכר בדם</label>
+            </div>
+          </div>
         </div>
         <div style="margin-top:8px;display:flex;gap:8px;">
           <button class="addrow" id="saveEditBtn-${code}">${icon("save",14)} שמור שינויים</button>
@@ -1345,12 +1390,29 @@ async function showAdminUserPanel(code, label, userData){
   });
   document.getElementById(`subTabBar-${code}`).querySelector('.subtab-btn[data-subtab="overview"]').classList.add("active");
 
+  const editSubBar = document.getElementById(`editSubTabBar-${code}`);
+  if(editSubBar){
+    editSubBar.querySelectorAll(".editsubtab-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        ["activity","health"].forEach(key=>{
+          const el = document.getElementById(`editSubpanel-${key}-${code}`);
+          if(el) el.style.display = (key === btn.dataset.editsubtab) ? "block" : "none";
+        });
+        editSubBar.querySelectorAll(".editsubtab-btn").forEach(b=>{
+          b.classList.toggle("active", b === btn);
+        });
+      });
+    });
+  }
+
   const acts = userData.activities || {};
   const headRow = document.getElementById("adminHistHead");
   if(acts.steps) headRow.insertAdjacentHTML("beforeend", `<th>🚶 צעדים</th>`);
   if(acts.running) headRow.insertAdjacentHTML("beforeend", `<th>🏃 ק"מ</th>`);
   if(acts.strength) headRow.insertAdjacentHTML("beforeend", `<th>🏋️ כוח</th>`);
-  const histColspan = 5 + (acts.steps?1:0) + (acts.running?1:0) + (acts.strength?1:0);
+  if(userData.sleepTarget) headRow.insertAdjacentHTML("beforeend", `<th>🛏️ שינה</th>`);
+  if(userData.trackSugar) headRow.insertAdjacentHTML("beforeend", `<th>🩸 סוכר</th>`);
+  const histColspan = 5 + (acts.steps?1:0) + (acts.running?1:0) + (acts.strength?1:0) + (userData.sleepTarget?1:0) + (userData.trackSugar?1:0);
 
   document.getElementById(`editUserBtn-${code}`).addEventListener("click", ()=>{
     document.getElementById(`userStatsView-${code}`).style.display = "none";
@@ -1460,10 +1522,20 @@ async function showAdminUserPanel(code, label, userData){
         else if(overBy < -personalTargets.kcal*0.3) rowStyle = 'style="background:#fdf6e3;"';
       }
       const act = (log[d] && log[d].activities) || {};
+      const sleepData = (log[d] && log[d].sleep) || {};
       let actCells = "";
       if(acts.steps) actCells += `<td>${act.steps ? act.steps.count : "—"}</td>`;
       if(acts.running) actCells += `<td>${act.running ? act.running.distance : "—"}</td>`;
       if(acts.strength) actCells += `<td>${(act.strength && act.strength.done) ? "✓" : "—"}</td>`;
+      if(userData.sleepTarget) actCells += `<td>${sleepData.hours!=null ? sleepData.hours : "—"}</td>`;
+      if(userData.trackSugar){
+        if(act.bloodSugar && act.bloodSugar.value!=null){
+          const st = bloodSugarStatus(act.bloodSugar.value);
+          actCells += `<td style="color:${st.color};font-weight:700;">${act.bloodSugar.value}</td>`;
+        }else{
+          actCells += `<td>—</td>`;
+        }
+      }
       return `<tr ${rowStyle}><td>${d}</td><td>${t.kcal.toFixed(0)}</td><td>${t.p.toFixed(1)}</td><td>${t.f.toFixed(1)}</td><td>${t.c.toFixed(1)}</td>${actCells}</tr>`;
     }).join("");
   }catch(e){
@@ -1882,6 +1954,14 @@ function switchAdminTab(tabId){
 
 document.querySelectorAll(".tab-btn[data-atab]").forEach(btn=>{
   btn.addEventListener("click", ()=> switchAdminTab(btn.dataset.atab));
+});
+
+document.querySelectorAll(".addsubtab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.getElementById("addUserSubpanel-activity").style.display = (btn.dataset.addsubtab === "activity") ? "block" : "none";
+    document.getElementById("addUserSubpanel-health").style.display = (btn.dataset.addsubtab === "health") ? "block" : "none";
+    document.querySelectorAll(".addsubtab-btn").forEach(b=> b.classList.toggle("active", b === btn));
+  });
 });
 
 function updateTabIndicators(){
