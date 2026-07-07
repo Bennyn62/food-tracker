@@ -105,15 +105,15 @@
   button.addrow:hover{background:var(--lightbg);}
   button.delrow{background:none;border:none;color:#b04a4a;cursor:pointer;font-size:1rem;line-height:1;}
 
-  .daily-total{background:var(--dark);border-radius:var(--radius-md);padding:18px 20px;color:#fff;margin-top:10px;}
-  .daily-total h2{margin:0 0 12px;font-size:1.1rem;color:#fff;}
-  .dt-grid{display:flex;gap:14px;flex-wrap:wrap;}
-  .dt-card{flex:1;min-width:140px;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:10px 12px;}
-  .dt-card .num{font-size:1.3rem;font-weight:700;}
-  .dt-card .lbl{font-size:.78rem;color:#cfe0da;margin-bottom:4px;}
-  .dt-card .bar{height:6px;background:rgba(255,255,255,.15);border-radius:4px;margin-top:6px;overflow:hidden;}
+  .daily-total{background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:18px 16px;margin-top:10px;}
+  .daily-total h2{margin:0 0 14px;font-size:1.05rem;color:var(--dark);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .dt-grid{display:flex;gap:10px;flex-wrap:wrap;}
+  .dt-card{flex:1;min-width:130px;background:var(--lightbg);border-radius:var(--radius-sm);padding:11px 12px;}
+  .dt-card .num{font-size:1.2rem;font-weight:700;color:var(--dark);}
+  .dt-card .lbl{font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:4px;}
+  .dt-card .bar{height:6px;background:#dde8e3;border-radius:4px;margin-top:8px;overflow:hidden;}
   .dt-card .bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .2s;}
-  .dt-card .delta{font-size:.75rem;color:#cfe0da;margin-top:4px;}
+  .dt-card .delta{font-size:.75rem;margin-top:5px;font-weight:600;}
 
   .note{text-align:center;color:var(--muted);font-size:.8rem;margin-top:20px;}
   .addfood-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;}
@@ -280,6 +280,10 @@
             <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
             <input type="number" id="newUserSleepTarget" placeholder="יעד שעות שינה" min="0" step="0.5" style="width:140px;">
           </div>
+          <div class="activity-toggle-row">
+            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">בריאות:</span>
+            <label><input type="checkbox" id="newUserTrackSugar"> מעקב סוכר בדם</label>
+          </div>
           <!-- future target/definition sections should be added above this line -->
           <div style="padding:14px 16px;">
             <button id="addUserBtn" class="btn-save" style="padding:10px 24px;border-radius:var(--radius-sm);">+ הוסף משתמש</button>
@@ -301,6 +305,7 @@
         <button class="tab-btn" data-tab="extra" style="--tabColor:var(--extra);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none"/></svg> <span>חטיף</span></button>
         <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg> <span>אימון</span></button>
         <button class="tab-btn" data-tab="week" style="--tabColor:var(--dark);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> <span>סיכום שבועי</span></button>
+        <button class="tab-btn" data-tab="month" style="--tabColor:#8a3a52;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <span>סיכום חודשי</span></button>
       </div>
 
       <div class="controlbar">
@@ -323,6 +328,8 @@
 
       <div id="weekSummarySection" style="display:none;"></div>
 
+      <div id="monthSummarySection" style="display:none;"></div>
+
       <div class="daily-total" id="persistentDailyTotal">
         <h2 id="dailyTotalTitle">סה"כ יומי</h2>
         <div class="dt-grid" id="dailyTotals"></div>
@@ -338,12 +345,12 @@ const ADMIN_CODE = "BENNY";
 const I18N = {
   he: {
     prevDay:"◀ יום קודם", nextDay:"יום הבא ▶", saveDay:"שמור יום",
-    tabBreakfast:"בוקר", tabLunch:"צהריים", tabDinner:"ערב", tabExtra:"חטיף", tabActivity:"אימון", tabWeek:"סיכום שבועי",
+    tabBreakfast:"בוקר", tabLunch:"צהריים", tabDinner:"ערב", tabExtra:"חטיף", tabActivity:"אימון", tabWeek:"סיכום שבועי", tabMonth:"סיכום חודשי",
     instructionText:'👉 בחר מזון בכל שורה, הקלד כמות בגרמים, ולחץ "שמור יום" בסיום.',
     dailyTotalTitle:'סה"כ יומי', logout:"התנתקות", hello:"שלום", appTitle:"eWay מעקב תזונה יומי",
     greetBreakfast:"🌅 בוקר טוב! זמן ארוחת הבוקר", greetLunch:"☀️ בתיאבון! זמן ארוחת הצהריים",
     greetDinner:"🌙 ערב טוב! זמן ארוחת הערב", greetExtra:"🍪 תיעוד חטיף / ארוחה נוספת",
-    greetActivity:"💪 זמן טוב לתעד אימון", greetWeek:"📊 איך עבר עליך השבוע",
+    greetActivity:"💪 זמן טוב לתעד אימון", greetWeek:"📊 איך עבר עליך השבוע", greetMonth:"📅 איך עבר עליך החודש",
     mealBreakfast:"בוקר", mealLunch:"צהריים", mealDinner:"ערב", mealExtra:"ארוחה נוספת / חטיף",
     colFood:"מזון", colQty:"כמות (גר')", colKcal:"קלוריות", colProtein:"חלבון", colFat:"שומן", colCarb:"פחמימה",
     addRow:"+ הוסף שורה", totalFor:'סה"כ ל', selectFood:"— בחר מזון —",
@@ -360,7 +367,7 @@ const I18N = {
     weightJourneyLabel:"התקדמות למשקל יעד",
     doneToday:"✓ בוצע היום", notDoneToday:"לא בוצע היום",
     labelSteps:"צעדים", labelRunning:"ריצה", labelStrength:"אימון כוח", labelSleep:"שינה",
-    weekSummaryTitle:"סיכום שבועי", weekNoData:"אין עדיין נתונים לשבוע הנוכחי.",
+    weekSummaryTitle:"סיכום שבועי", weekNoData:"אין עדיין נתונים לשבוע הנוכחי.", monthSummaryTitle:"סיכום חודשי", monthNoData:"אין עדיין נתונים לחודש הנוכחי.",
     daysWithData:"ימים עם נתונים", day:"יום", days:"ימים",
     avgDaily:" (ממוצע יומי)", strengthWeekSessions:"אימוני כוח השבוע", strengthWeekSimple:"אימונים השבוע",
     saving:"שומר...", savedCloud:"✓ נשמר בענן", saveError:"שגיאה בשמירה: ",
@@ -369,12 +376,12 @@ const I18N = {
   },
   en: {
     prevDay:"◀ Previous day", nextDay:"Next day ▶", saveDay:"Save day",
-    tabBreakfast:"Breakfast", tabLunch:"Lunch", tabDinner:"Dinner", tabExtra:"Snack", tabActivity:"Workout", tabWeek:"Weekly Summary",
+    tabBreakfast:"Breakfast", tabLunch:"Lunch", tabDinner:"Dinner", tabExtra:"Snack", tabActivity:"Workout", tabWeek:"Weekly Summary", tabMonth:"Monthly Summary",
     instructionText:"👉 Pick a food in each row, type the amount in grams, and click \"Save day\" when done.",
     dailyTotalTitle:"Daily Total", logout:"Log out", hello:"Hello", appTitle:"eWay",
     greetBreakfast:"🌅 Good morning! Time for breakfast", greetLunch:"☀️ Enjoy! Time for lunch",
     greetDinner:"🌙 Good evening! Time for dinner", greetExtra:"🍪 Logging a snack / extra meal",
-    greetActivity:"💪 Good time to log a workout", greetWeek:"📊 How was your week",
+    greetActivity:"💪 Good time to log a workout", greetWeek:"📊 How was your week", greetMonth:"📅 How was your month",
     mealBreakfast:"Breakfast", mealLunch:"Lunch", mealDinner:"Dinner", mealExtra:"Extra meal / Snack",
     colFood:"Food", colQty:"Amount (g)", colKcal:"Calories", colProtein:"Protein", colFat:"Fat", colCarb:"Carbs",
     addRow:"+ Add row", totalFor:"Total for ", selectFood:"— Select food —",
@@ -391,7 +398,7 @@ const I18N = {
     weightJourneyLabel:"Progress to target weight",
     doneToday:"✓ Done today", notDoneToday:"Not done today",
     labelSteps:"Steps", labelRunning:"Running", labelStrength:"Strength training", labelSleep:"Sleep",
-    weekSummaryTitle:"Weekly Summary", weekNoData:"No data yet for this week.",
+    weekSummaryTitle:"Weekly Summary", weekNoData:"No data yet for this week.", monthSummaryTitle:"Monthly Summary", monthNoData:"No data yet for this month.",
     daysWithData:"days with data", day:"day", days:"days",
     avgDaily:" (daily avg)", strengthWeekSessions:"Strength sessions this week", strengthWeekSimple:"sessions this week",
     saving:"Saving...", savedCloud:"✓ Saved to cloud", saveError:"Save error: ",
@@ -420,7 +427,7 @@ function applyStaticTranslations(){
   setText("logoutBtn", "logout");
   setText("appTitle", "appTitle");
 
-  const tabMap = {breakfast:"tabBreakfast", lunch:"tabLunch", dinner:"tabDinner", extra:"tabExtra", activity:"tabActivity", week:"tabWeek"};
+  const tabMap = {breakfast:"tabBreakfast", lunch:"tabLunch", dinner:"tabDinner", extra:"tabExtra", activity:"tabActivity", week:"tabWeek", month:"tabMonth"};
   Object.keys(tabMap).forEach(tabId=>{
     const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
     const span = btn ? btn.querySelector("span") : null;
@@ -616,6 +623,7 @@ const ICONS = {
   cookie: `<circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none"/>`,
   dumbbell: `<rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/>`,
   barchart: `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>`,
+  calendar: `<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>`,
   clipboard: `<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1" ry="1"/>`,
   trending: `<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>`,
   filetext: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>`,
@@ -738,7 +746,7 @@ async function doLogin(){
       msg.textContent = "This user is blocked. Contact your admin.";
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget};
+    currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
     await enterApp();
   }catch(e){
     msg.style.color = "#b04a4a";
@@ -803,6 +811,7 @@ async function enterApp(){
     document.getElementById("dateInput").value = currentDate;
     loadDate(currentDate);
     renderWeekSummary();
+    renderMonthSummary();
     switchTab(pickInitialTab());
     const noteEl = document.getElementById("dataNote");
     if(noteEl) noteEl.style.display = "none";
@@ -829,6 +838,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const runningTarget = parseFloat(document.getElementById("newUserRunningTarget").value) || null;
   const strengthWeeklyTarget = parseFloat(document.getElementById("newUserStrengthTarget").value) || null;
   const sleepTarget = parseFloat(document.getElementById("newUserSleepTarget").value) || null;
+  const trackSugar = document.getElementById("newUserTrackSugar").checked;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
   if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -841,7 +851,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     }
     await fbAddUser(code, {name, gender, height, weight, waist, age, language,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
-      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget});
+      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget, trackSugar});
     document.getElementById("newUserName").value = "";
     document.getElementById("newUserCode").value = "";
     document.getElementById("newUserHeight").value = "";
@@ -1164,6 +1174,17 @@ function sleepPeriodAvg(log, startDate, endDate){
   return count>0 ? sum/count : null;
 }
 
+function sugarPeriodAvg(log, startDate, endDate){
+  let sum=0, count=0;
+  Object.keys(log).forEach(d=>{
+    const act = log[d] && log[d].activities;
+    if(d >= startDate && d <= endDate && act && act.bloodSugar && act.bloodSugar.value!=null){
+      sum += act.bloodSugar.value; count++;
+    }
+  });
+  return count>0 ? sum/count : null;
+}
+
 async function showAdminUserPanel(code, label, userData){
   const panel = document.getElementById("adminUserPanel");
   panel.innerHTML = `<section><h2><span>${label}</span></h2><div style="padding:20px;color:var(--muted);">טוען...</div></section>`;
@@ -1252,6 +1273,10 @@ async function showAdminUserPanel(code, label, userData){
         <div class="activity-toggle-row">
           <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינה:</span>
           <input type="number" id="editSleepTarget-${code}" placeholder="יעד שעות שינה" value="${userData.sleepTarget||''}" step="0.5" style="width:140px;">
+        </div>
+        <div class="activity-toggle-row">
+          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">בריאות:</span>
+          <label><input type="checkbox" id="editTrackSugar-${code}" ${userData.trackSugar ? 'checked':''}> מעקב סוכר בדם</label>
         </div>
         <div style="margin-top:8px;display:flex;gap:8px;">
           <button class="addrow" id="saveEditBtn-${code}">${icon("save",14)} שמור שינויים</button>
@@ -1361,8 +1386,9 @@ async function showAdminUserPanel(code, label, userData){
     const newRunningTarget = parseFloat(document.getElementById(`editRunningTarget-${code}`).value) || null;
     const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
     const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
+    const newTrackSugar = document.getElementById(`editTrackSugar-${code}`).checked;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget};
+    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget, trackSugar:newTrackSugar};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
@@ -1541,11 +1567,13 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
   const primaryAct = getPrimaryActivity(userData || {});
   const hasWeightData = weightEntries && weightEntries.length > 0;
   const hasSleepTarget = !!(userData && userData.sleepTarget);
+  const hasSugarTracking = !!(userData && userData.trackSugar);
 
   const headCells = ["", "קלוריות", "שומן", "פחמימה", "חלבון"];
   if(primaryAct) headCells.push(primaryAct.label);
   if(hasSleepTarget) headCells.push("שינה");
   if(hasWeightData) headCells.push("משקל");
+  if(hasSugarTracking) headCells.push("סוכר");
 
   const targetWeightVal = calcTargetWeight(userData.height, userData.age, userData.gender);
 
@@ -1558,6 +1586,9 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
   }
   if(hasWeightData){
     targetCells += `<td>${targetWeightVal ? targetWeightVal.target + ' ק"ג' : '—'}</td>`;
+  }
+  if(hasSugarTracking){
+    targetCells += `<td style="font-size:.72rem;">70-99</td>`;
   }
   const targetRow = `<tr style="background:var(--lightbg);"><td class="stat-period-label">🎯 יעד</td>${targetCells}</tr>`;
 
@@ -1605,6 +1636,16 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
       cells += `<td>${cellText}</td>`;
     }
 
+    if(hasSugarTracking){
+      const avgSugar = sugarPeriodAvg(log, range.start, range.end);
+      if(avgSugar !== null){
+        const status = bloodSugarStatus(avgSugar);
+        cells += `<td style="color:${status.color};font-weight:700;">${Math.round(avgSugar)}</td>`;
+      }else{
+        cells += `<td>—</td>`;
+      }
+    }
+
     return `<tr><td class="stat-period-label">${per.label}</td>${cells}</tr>`;
   }).join("");
 
@@ -1640,6 +1681,7 @@ const TAB_PANELS = {
   extra: "tabwrap-extra",
   activity: "activitySection",
   week: "weekSummarySection",
+  month: "monthSummarySection",
 };
 
 const GREETING_KEYS = {
@@ -1649,7 +1691,80 @@ const GREETING_KEYS = {
   extra: "greetExtra",
   activity: "greetActivity",
   week: "greetWeek",
+  month: "greetMonth",
 };
+
+function renderMonthSummary(){
+  const container = document.getElementById("monthSummarySection");
+  if(!container) return;
+  const range = getCalendarRange("month");
+  const stats = periodStats(currentLog, range.start, range.end);
+  const rangeLabel = `${range.start.slice(5)} – ${range.end.slice(5)}`;
+
+  if(!stats){
+    container.innerHTML = `
+      <div class="daily-total">
+        <h2>${icon("calendar")} ${t("monthSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:var(--muted);">${rangeLabel}</span></h2>
+        <div style="padding:10px 4px;color:var(--muted);font-size:.9rem;">${t("monthNoData")}</div>
+      </div>`;
+    return;
+  }
+
+  const cards = [
+    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
+    {val:stats.f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+  ];
+
+  if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
+    const denom = currentUser.originalWeight - currentUser.targetWeightVal;
+    const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
+    cards.push({special:"weightJourney", pct: journeyPct});
+  }
+
+  if(currentUser && currentUser.activities){
+    const acts = currentUser.activities;
+    if(acts.steps){
+      const avg = activityPeriodValue(currentLog, "steps", range.start, range.end);
+      cards.push({val: avg||0, target: currentUser.stepsTarget||null, label:t("labelSteps") + t("avgDaily"), unit:"", dec:0});
+    }
+    if(acts.running){
+      const avg = activityPeriodValue(currentLog, "running", range.start, range.end);
+      cards.push({val: avg||0, target: currentUser.runningTarget||null, label:t("labelRunning") + t("avgDaily"), unit:` ${t("unitKm")}`, dec:1});
+    }
+    if(acts.strength){
+      const sessions = activityPeriodValue(currentLog, "strength", range.start, range.end);
+      if(currentUser.strengthWeeklyTarget){
+        const days = periodDayCount("month");
+        const expected = Math.round(currentUser.strengthWeeklyTarget * (days/7));
+        cards.push({val: sessions, target: expected, label:t("strengthWeekSessions"), unit:"", dec:0});
+      }else{
+        cards.push({text: `${sessions} ${t("strengthWeekSimple")}`, label:t("labelStrength")});
+      }
+    }
+  }
+
+  if(currentUser && currentUser.sleepTarget){
+    const avgSleep = sleepPeriodAvg(currentLog, range.start, range.end);
+    cards.push({val: avgSleep||0, target: currentUser.sleepTarget, label:t("labelSleep") + t("avgDaily"), unit:` ${t("unitHours")}`, dec:1});
+  }
+
+  if(currentUser && currentUser.trackSugar){
+    const avgSugar = sugarPeriodAvg(currentLog, range.start, range.end);
+    const status = bloodSugarStatus(avgSugar);
+    cards.push({special:"bloodSugar", val: avgSugar!=null ? Math.round(avgSugar) : null, status});
+  }
+
+  const cardsHtml = cards.map(cardHTML).join("");
+
+  container.innerHTML = `
+    <div class="daily-total">
+      <h2>${icon("calendar")} ${t("monthSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:var(--muted);">${rangeLabel} · ${stats.days} ${stats.days===1?t("day"):t("days")} ${t("daysWithData")}</span></h2>
+      <div class="dt-grid">${cardsHtml}</div>
+    </div>
+  `;
+}
 
 function renderWeekSummary(){
   const container = document.getElementById("weekSummarySection");
@@ -1661,8 +1776,8 @@ function renderWeekSummary(){
   if(!stats){
     container.innerHTML = `
       <div class="daily-total">
-        <h2>${icon("barchart")} ${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel}</span></h2>
-        <div style="padding:10px 4px;color:#cfe0da;font-size:.9rem;">${t("weekNoData")}</div>
+        <h2>${icon("barchart")} ${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:var(--muted);">${rangeLabel}</span></h2>
+        <div style="padding:10px 4px;color:var(--muted);font-size:.9rem;">${t("weekNoData")}</div>
       </div>`;
     return;
   }
@@ -1705,11 +1820,17 @@ function renderWeekSummary(){
     cards.push({val: avgSleep||0, target: currentUser.sleepTarget, label:t("labelSleep") + t("avgDaily"), unit:` ${t("unitHours")}`, dec:1});
   }
 
+  if(currentUser && currentUser.trackSugar){
+    const avgSugar = sugarPeriodAvg(currentLog, range.start, range.end);
+    const status = bloodSugarStatus(avgSugar);
+    cards.push({special:"bloodSugar", val: avgSugar!=null ? Math.round(avgSugar) : null, status});
+  }
+
   const cardsHtml = cards.map(cardHTML).join("");
 
   container.innerHTML = `
     <div class="daily-total">
-      <h2>${icon("barchart")} ${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:#cfe0da;">${rangeLabel} · ${stats.days} ${stats.days===1?t("day"):t("days")} ${t("daysWithData")}</span></h2>
+      <h2>${icon("barchart")} ${t("weekSummaryTitle")} <span style="font-size:.78rem;font-weight:400;color:var(--muted);">${rangeLabel} · ${stats.days} ${stats.days===1?t("day"):t("days")} ${t("daysWithData")}</span></h2>
       <div class="dt-grid">${cardsHtml}</div>
     </div>
   `;
@@ -1736,7 +1857,7 @@ function switchTab(tabId){
   const greetEl = document.getElementById("greetingBanner");
   if(greetEl) greetEl.textContent = GREETING_KEYS[tabId] ? t(GREETING_KEYS[tabId]) : "";
   const persistentDT = document.getElementById("persistentDailyTotal");
-  if(persistentDT) persistentDT.style.display = (tabId === "week") ? "none" : "block";
+  if(persistentDT) persistentDT.style.display = (tabId === "week" || tabId === "month") ? "none" : "block";
 }
 
 document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
@@ -1836,46 +1957,98 @@ function buildActivitySection(){
   const container = document.getElementById("activitySection");
   if(!container) return;
   const acts = (currentUser && currentUser.activities) || {};
-  if(!acts.steps && !acts.running && !acts.strength){
+  const trackSugar = !!(currentUser && currentUser.trackSugar);
+  container.innerHTML = "";
+
+  if(!acts.steps && !acts.running && !acts.strength && !trackSugar){
     container.innerHTML = `<section><h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span></h2>
       <div style="padding:20px;text-align:center;color:var(--muted);font-size:.9rem;">${t("noActivities")}</div>
     </section>`;
     return;
   }
-  let rows = "";
-  if(acts.steps){
-    rows += `<tr>
-      <td>${t("actSteps")}</td>
-      <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="${t("phSteps")}"></td>
-    </tr>`;
-  }
-  if(acts.running){
-    rows += `<tr>
-      <td>${t("actRunning")}</td>
-      <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="${t("phKm")}"></td>
-    </tr>`;
-  }
-  if(acts.strength){
-    rows += `<tr>
-      <td>${t("actStrength")}</td>
-      <td><label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.9rem;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> ${t("trainedToday")}</label></td>
-    </tr>`;
-  }
-  container.innerHTML = `
-    <section>
+
+  if(acts.steps || acts.running || acts.strength){
+    let rows = "";
+    if(acts.steps){
+      rows += `<tr>
+        <td>${t("actSteps")}</td>
+        <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="${t("phSteps")}"></td>
+      </tr>`;
+    }
+    if(acts.running){
+      rows += `<tr>
+        <td>${t("actRunning")}</td>
+        <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="${t("phKm")}"></td>
+      </tr>`;
+    }
+    if(acts.strength){
+      rows += `<tr>
+        <td>${t("actStrength")}</td>
+        <td><label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.9rem;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> ${t("trainedToday")}</label></td>
+      </tr>`;
+    }
+    const workoutSection = document.createElement("section");
+    workoutSection.innerHTML = `
       <h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span></h2>
       <table>
         <thead><tr><th style="width:35%">${t("colActivity")}</th><th>${t("colAmount")}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-    </section>
+    `;
+    container.appendChild(workoutSection);
+    const stepsCountEl = document.getElementById("actStepsCount");
+    if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
+    const runDistEl = document.getElementById("actRunningDistance");
+    if(runDistEl) runDistEl.addEventListener("input", recalcDaily);
+    const strengthEl = document.getElementById("actStrengthDone");
+    if(strengthEl) strengthEl.addEventListener("change", recalcDaily);
+  }
+
+  if(trackSugar){
+    container.appendChild(buildBloodSugarSection());
+  }
+}
+
+function bloodSugarStatus(val){
+  if(val == null || isNaN(val)) return null;
+  if(val < 70) return {label:"נמוך", color:"#c77b2b"};
+  if(val <= 99) return {label:"תקין", color:"#2e7d4f"};
+  if(val <= 125) return {label:"גבולי", color:"#c77b2b"};
+  return {label:"גבוה", color:"#b04a4a"};
+}
+
+function buildBloodSugarSection(){
+  const section = document.createElement("section");
+  section.innerHTML = `
+    <h2 style="background:var(--dark);"><span>${icon("trending")} סוכר בדם</span></h2>
+    <div style="padding:14px 16px;">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">רמת סוכר (mg/dL)</label><input type="number" id="bloodSugarValue" min="0" step="1" style="width:130px;"></div>
+        <div id="bloodSugarStatusBadge" style="font-size:.82rem;font-weight:700;padding:6px 12px;border-radius:var(--radius-sm);background:var(--lightbg);color:var(--muted);"></div>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:10px;">טווח כללי (לא רפואי): תקין 70-99 · גבולי 100-125 · גבוה 126+. לפרשנות מדויקת יש להיוועץ בגורם רפואי.</div>
+    </div>
   `;
-  const stepsCountEl = document.getElementById("actStepsCount");
-  if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
-  const runDistEl = document.getElementById("actRunningDistance");
-  if(runDistEl) runDistEl.addEventListener("input", recalcDaily);
-  const strengthEl = document.getElementById("actStrengthDone");
-  if(strengthEl) strengthEl.addEventListener("change", recalcDaily);
+  section.querySelector("#bloodSugarValue").addEventListener("input", onBloodSugarChange);
+  return section;
+}
+
+function onBloodSugarChange(){
+  const el = document.getElementById("bloodSugarValue");
+  const badge = document.getElementById("bloodSugarStatusBadge");
+  const val = parseFloat(el.value);
+  const status = bloodSugarStatus(val);
+  if(badge){
+    if(status){
+      badge.textContent = status.label;
+      badge.style.color = status.color;
+      badge.style.background = status.color + "1a";
+    }else{
+      badge.textContent = "";
+      badge.style.background = "var(--lightbg)";
+    }
+  }
+  recalcDaily();
 }
 
 function loadActivityData(actData){
@@ -1886,6 +2059,11 @@ function loadActivityData(actData){
   if(rdEl) rdEl.value = actData.running ? actData.running.distance : "";
   const stEl = document.getElementById("actStrengthDone");
   if(stEl) stEl.checked = !!(actData.strength && actData.strength.done);
+  const bsEl = document.getElementById("bloodSugarValue");
+  if(bsEl){
+    bsEl.value = (actData.bloodSugar && actData.bloodSugar.value!=null) ? actData.bloodSugar.value : "";
+    onBloodSugarChange();
+  }
 }
 
 function collectActivityData(){
@@ -1903,6 +2081,10 @@ function collectActivityData(){
     const done = (document.getElementById("actStrengthDone")||{}).checked || false;
     if(done) act.strength = {done:true};
   }
+  if(currentUser && currentUser.trackSugar){
+    const val = parseFloat((document.getElementById("bloodSugarValue")||{}).value);
+    if(!isNaN(val) && val>0) act.bloodSugar = {value: val};
+  }
   return act;
 }
 
@@ -1913,10 +2095,10 @@ function buildMealSection(meal, targetContainer){
   const mealTitle = getMealTitle(meal.id);
   section.innerHTML = `
     <h2 style="background:${meal.color}"><span>${mealTitle}</span><span class="meal-total" id="total-${meal.id}">0 ${t("colKcal")}</span></h2>
-    <table>
+    <table style="table-layout:fixed;">
       <thead><tr><th style="width:30%">${t("colFood")}</th><th style="width:12%">${t("colQty")}</th><th style="width:12%">${t("colKcal")}</th><th style="width:12%">${t("colProtein")}</th><th style="width:12%">${t("colFat")}</th><th style="width:12%">${t("colCarb")}</th><th style="width:6%"></th></tr></thead>
       <tbody id="body-${meal.id}"></tbody>
-      <tfoot><tr class="subtotal-row"><td colspan="2">${t("totalFor")}${mealTitle}</td><td id="sum-kcal-${meal.id}">0</td><td id="sum-p-${meal.id}">0</td><td id="sum-f-${meal.id}">0</td><td id="sum-c-${meal.id}">0</td><td></td></tr></tfoot>
+      <tfoot><tr class="subtotal-row"><td colspan="2" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t("totalFor")}${mealTitle}</td><td id="sum-kcal-${meal.id}">0</td><td id="sum-p-${meal.id}">0</td><td id="sum-f-${meal.id}">0</td><td id="sum-c-${meal.id}">0</td><td></td></tr></tfoot>
     </table>
     <div class="row-actions"><button class="addrow" data-meal="${meal.id}">${t("addRow")}</button></div>
   `;
@@ -2015,6 +2197,12 @@ function cardHTML(cd){
     const barColor = pctColor(Math.round(cd.pct)) || "var(--accent)";
     return `<div class="dt-card"><div class="lbl">${t("weightJourneyLabel")}</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
   }
+  if(cd.special === "bloodSugar"){
+    const color = cd.status ? cd.status.color : "var(--dark)";
+    const valTxt = cd.val!=null ? `${cd.val} mg/dL` : "—";
+    const statusTxt = cd.status ? cd.status.label : "";
+    return `<div class="dt-card"><div class="lbl">סוכר בדם</div><div class="num" style="color:${color};">${valTxt}</div>${statusTxt ? `<div class="delta" style="color:${color};">${statusTxt}</div>` : ""}</div>`;
+  }
   if(cd.text !== undefined){
     return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num" style="font-size:1rem;">${cd.text}</div></div>`;
   }
@@ -2024,7 +2212,7 @@ function cardHTML(cd){
     const barColor = pctColor(Math.round(rawPct)) || "var(--accent)";
     const delta = cd.val - cd.target;
     const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} ${t("overTarget")}` : `${Math.abs(delta).toFixed(0)}${cd.unit} ${t("underTarget")}`;
-    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:#9fc3ba;">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
+    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:var(--muted);">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
   }
   return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
 }
@@ -2071,6 +2259,12 @@ function recalcDaily(){
     const wEl = document.getElementById("sleepWake");
     const hours = (bEl && wEl) ? computeSleepHours(bEl.value, wEl.value) : null;
     cards.push({val:(hours||0), target:currentUser.sleepTarget, label:t("labelSleep"), unit:` ${t("unitHours")}`, dec:1});
+  }
+  if(currentUser && currentUser.trackSugar){
+    const el = document.getElementById("bloodSugarValue");
+    const val = el ? parseFloat(el.value) : NaN;
+    const status = bloodSugarStatus(val);
+    cards.push({special:"bloodSugar", val: isNaN(val) ? null : val, status});
   }
   document.getElementById("dailyTotals").innerHTML = cards.map(cardHTML).join("");
 }
@@ -2145,6 +2339,7 @@ document.getElementById("saveBtn").addEventListener("click", async ()=>{
     renderHistory();
     updateTabIndicators();
     renderWeekSummary();
+    renderMonthSummary();
   }catch(e){
     status.textContent = t("saveError") + (e && e.message ? e.message : String(e));
     status.style.color = "#b04a4a";
