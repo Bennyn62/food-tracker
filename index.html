@@ -99,7 +99,7 @@
   select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);}
   input[type=number]{text-align:center;}
   .val{font-weight:600;color:var(--dark);}
-  .subtotal-row td{background:var(--lightbg);font-weight:700;color:var(--dark);}
+  .subtotal-row td{background:var(--lightbg);font-weight:700;color:var(--dark);text-align:center;}
   .row-actions{padding:8px 16px;text-align:left;}
   button.addrow{background:none;border:1px dashed var(--teal);color:var(--teal);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;}
   button.addrow:hover{background:var(--lightbg);}
@@ -149,10 +149,11 @@
   .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;font-weight:600;}
   .stat-value{font-size:1.1rem;font-weight:700;color:var(--dark);}
   .stat-value.accent{color:var(--teal);}
-  .period-table{width:100%;border-collapse:collapse;margin-top:4px;}
-  .period-table th{font-size:.72rem;color:var(--muted);font-weight:600;padding:4px 6px;text-align:center;}
-  .period-table td{font-size:.92rem;font-weight:700;color:var(--dark);padding:6px;text-align:center;border-top:1px solid var(--grid);}
-  .period-table td.stat-period-label{font-size:.8rem;font-weight:600;color:var(--muted);text-align:right;}
+  .period-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:4px;border-radius:var(--radius-sm);}
+  .period-table{width:100%;min-width:620px;border-collapse:collapse;}
+  .period-table th{font-size:.72rem;color:var(--muted);font-weight:600;padding:4px 6px;text-align:center;white-space:nowrap;}
+  .period-table td{font-size:.92rem;font-weight:700;color:var(--dark);padding:6px;text-align:center;border-top:1px solid var(--grid);white-space:nowrap;}
+  .period-table td.stat-period-label{font-size:.8rem;font-weight:600;color:var(--muted);text-align:right;white-space:nowrap;}
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
   .admin-user-chip{padding:8px 14px;box-shadow:var(--shadow-sm);border:2px solid transparent;border-radius:var(--radius-pill);cursor:pointer;font-size:.85rem;background:#fff;transition:border-color .15s;}
   .admin-user-chip.active{background:var(--dark);color:#fff;border-color:var(--dark);}
@@ -206,7 +207,19 @@
     <h1 id="appTitle">eWay מעקב תזונה יומי</h1>
     <div class="topbar">
       <div class="who" id="whoLabel"></div>
-      <button id="logoutBtn">התנתקות</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="backToUserBtn" style="display:none;border:1px solid var(--grid);background:#fff;color:var(--dark);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;">🔙 חזרה לתצוגה שלי</button>
+        <span id="adminUnlockBtnWrap" style="display:none;">
+          <button id="adminUnlockBtn" style="border:1px solid var(--grid);background:#fff;color:var(--muted);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;">🔐 מסך ניהול</button>
+        </span>
+        <button id="logoutBtn">התנתקות</button>
+      </div>
+    </div>
+
+    <div id="adminUnlockRow" style="display:none;justify-content:center;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <input type="text" id="adminUnlockInput" placeholder="קוד מנהל" style="width:auto;max-width:180px;">
+      <button id="adminUnlockConfirm" class="btn-save" style="padding:8px 16px;border-radius:var(--radius-sm);">אישור</button>
+      <span id="adminUnlockMsg" style="font-size:.82rem;"></span>
     </div>
 
     <div id="adminView" style="display:none;">
@@ -278,6 +291,9 @@
               <option value="he">עברית</option>
               <option value="en">English</option>
             </select>
+          </div>
+          <div class="activity-toggle-row">
+            <label><input type="checkbox" id="newUserIsAdmin"> 🔑 הרשאת מנהל מערכת (הקוד של המשתמש הזה ישמש גם לכניסה למסך הניהול)</label>
           </div>
           <div class="tab-bar" id="addUserSubTabBar" style="margin:0 16px 16px;">
             <button class="tab-btn addsubtab-btn active" data-addsubtab="activity" style="--tabColor:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg> פעילות</button>
@@ -697,6 +713,34 @@ async function fbHeartbeat(code){
 async function fbDeleteUser(code){
   await db.collection("users").doc(code).delete();
 }
+async function fbChangeUserCode(oldCode, newCode){
+  const userDoc = await db.collection("users").doc(oldCode).get();
+  if(!userDoc.exists) throw new Error("משתמש מקור לא נמצא");
+  const userData = userDoc.data();
+  await db.collection("users").doc(newCode).set(userData);
+
+  const weightSnap = await db.collection("users").doc(oldCode).collection("weightLog").get();
+  if(!weightSnap.empty){
+    const copyBatch = db.batch();
+    weightSnap.forEach(d=> copyBatch.set(db.collection("users").doc(newCode).collection("weightLog").doc(d.id), d.data()));
+    await copyBatch.commit();
+    const delBatch = db.batch();
+    weightSnap.forEach(d=> delBatch.delete(db.collection("users").doc(oldCode).collection("weightLog").doc(d.id)));
+    await delBatch.commit();
+  }
+
+  const daysSnap = await db.collection("logs").doc(oldCode).collection("days").get();
+  if(!daysSnap.empty){
+    const copyBatch2 = db.batch();
+    daysSnap.forEach(d=> copyBatch2.set(db.collection("logs").doc(newCode).collection("days").doc(d.id), d.data()));
+    await copyBatch2.commit();
+    const delBatch2 = db.batch();
+    daysSnap.forEach(d=> delBatch2.delete(db.collection("logs").doc(oldCode).collection("days").doc(d.id)));
+    await delBatch2.commit();
+  }
+
+  await db.collection("users").doc(oldCode).delete();
+}
 async function fbAddWeightEntry(code, date, weight, waist){
   const entry = {weight, date};
   if(waist!=null) entry.waist = waist;
@@ -757,26 +801,28 @@ async function doLogin(){
   msg.style.color = "var(--muted)";
   msg.textContent = "Checking...";
 
-  if(code === ADMIN_CODE){
-    currentUser = {code, name:"מנהל", isAdmin:true};
-    await enterApp();
-    return;
-  }
   try{
     const users = await fbGetUsers();
     const found = users.find(u=>u.code === code);
-    if(!found){
-      msg.style.color = "#b04a4a";
-      msg.textContent = "Code not recognized. Check again or contact your admin.";
+    if(found){
+      if(found.blocked){
+        msg.style.color = "#b04a4a";
+        msg.textContent = "This user is blocked. Contact your admin.";
+        return;
+      }
+      currentUser = {code:found.code, name:found.name, isAdmin:false, canAdmin:!!found.isAdmin, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
+      await enterApp();
       return;
     }
-    if(found.blocked){
-      msg.style.color = "#b04a4a";
-      msg.textContent = "This user is blocked. Contact your admin.";
+    if(code === ADMIN_CODE){
+      // Bootstrap fallback: no personal user record exists yet for this code.
+      // Grants direct admin access once, so a personal record (with isAdmin checked) can be created.
+      currentUser = {code, name:"מנהל", isAdmin:true};
+      await enterApp();
       return;
     }
-    currentUser = {code:found.code, name:found.name, isAdmin:false, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
-    await enterApp();
+    msg.style.color = "#b04a4a";
+    msg.textContent = "Code not recognized. Check again or contact your admin.";
   }catch(e){
     msg.style.color = "#b04a4a";
     msg.textContent = "Login error: " + (e && e.message ? e.message : String(e));
@@ -792,6 +838,65 @@ document.getElementById("logoutBtn").addEventListener("click", ()=>{
   document.getElementById("loginMsg").textContent = "";
 });
 
+async function enterAdminMode(){
+  document.getElementById("userView").style.display = "none";
+  document.getElementById("adminView").style.display = "block";
+  document.getElementById("whoLabel").textContent = "מנהל";
+  renderRefList("");
+  await renderAdminUserList();
+  switchAdminTab("manage");
+  const noteEl = document.getElementById("dataNote");
+  if(noteEl) noteEl.style.display = "block";
+  const backBtn = document.getElementById("backToUserBtn");
+  if(backBtn) backBtn.style.display = (currentUser && !currentUser.isAdmin) ? "inline-block" : "none";
+  if(heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(()=> renderAdminUserList(), 30000);
+}
+
+function exitAdminMode(){
+  if(!currentUser || currentUser.isAdmin) return; // bootstrap admin has no personal view to return to
+  document.getElementById("adminView").style.display = "none";
+  document.getElementById("userView").style.display = "block";
+  document.getElementById("whoLabel").textContent = t("hello") + ", " + currentUser.name;
+  const noteEl = document.getElementById("dataNote");
+  if(noteEl) noteEl.style.display = "none";
+  if(heartbeatInterval) clearInterval(heartbeatInterval);
+  fbHeartbeat(currentUser.code);
+  heartbeatInterval = setInterval(()=> fbHeartbeat(currentUser.code), 30000);
+}
+
+async function checkAdminUnlock(code){
+  if(code === ADMIN_CODE) return true;
+  try{
+    const users = await fbGetUsers();
+    const found = users.find(u=>u.code === code);
+    return !!(found && found.isAdmin);
+  }catch(e){ return false; }
+}
+
+document.getElementById("adminUnlockBtn").addEventListener("click", ()=>{
+  const row = document.getElementById("adminUnlockRow");
+  row.style.display = row.style.display === "none" ? "flex" : "none";
+  document.getElementById("adminUnlockInput").value = "";
+  document.getElementById("adminUnlockMsg").textContent = "";
+});
+document.getElementById("adminUnlockConfirm").addEventListener("click", async ()=>{
+  const code = document.getElementById("adminUnlockInput").value.trim();
+  const msg = document.getElementById("adminUnlockMsg");
+  if(!code){ msg.textContent = "הזן קוד."; msg.style.color = "#b04a4a"; return; }
+  msg.style.color = "var(--muted)";
+  msg.textContent = "בודק...";
+  const ok = await checkAdminUnlock(code);
+  if(ok){
+    document.getElementById("adminUnlockRow").style.display = "none";
+    await enterAdminMode();
+  }else{
+    msg.style.color = "#b04a4a";
+    msg.textContent = "קוד לא מזהה כמנהל.";
+  }
+});
+document.getElementById("backToUserBtn").addEventListener("click", exitAdminMode);
+
 async function enterApp(){
   document.getElementById("loginGate").style.display = "none";
   document.getElementById("appArea").style.display = "block";
@@ -802,18 +907,12 @@ async function enterApp(){
   }catch(e){ FOODS = [...BUILTIN_FOODS]; /* fallback if Firestore unreachable */ }
 
   if(currentUser.isAdmin){
-    document.getElementById("adminView").style.display = "block";
-    document.getElementById("userView").style.display = "none";
-    renderRefList("");
-    await renderAdminUserList();
-    switchAdminTab("manage");
-    const noteEl = document.getElementById("dataNote");
-    if(noteEl) noteEl.style.display = "block";
-    if(heartbeatInterval) clearInterval(heartbeatInterval);
-    heartbeatInterval = setInterval(()=> renderAdminUserList(), 30000);
+    await enterAdminMode();
   }else{
     document.getElementById("adminView").style.display = "none";
     document.getElementById("userView").style.display = "block";
+    const unlockBtnWrap = document.getElementById("adminUnlockBtnWrap");
+    if(unlockBtnWrap) unlockBtnWrap.style.display = "inline-block";
     applyStaticTranslations();
     currentTargets = calcPersonalTargets(currentUser);
     renderTargetBadges(currentTargets);
@@ -868,6 +967,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const strengthWeeklyTarget = parseFloat(document.getElementById("newUserStrengthTarget").value) || null;
   const sleepTarget = parseFloat(document.getElementById("newUserSleepTarget").value) || null;
   const trackSugar = document.getElementById("newUserTrackSugar").checked;
+  const isAdminFlag = document.getElementById("newUserIsAdmin").checked;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
   if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -880,7 +980,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     }
     await fbAddUser(code, {name, gender, height, weight, waist, age, language,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
-      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget, trackSugar});
+      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget, trackSugar, isAdmin:isAdminFlag});
     document.getElementById("newUserName").value = "";
     document.getElementById("newUserCode").value = "";
     document.getElementById("newUserHeight").value = "";
@@ -1290,6 +1390,15 @@ async function showAdminUserPanel(code, label, userData){
           <div class="af-field"><label>גיל</label><input type="number" id="editAge-${code}" value="${userData.age||''}"></div>
           <div class="af-field"><label>שפה</label><select id="editLanguage-${code}"><option value="he" ${userData.language!=='en'?'selected':''}>עברית</option><option value="en" ${userData.language==='en'?'selected':''}>English</option></select></div>
         </div>
+        <div class="activity-toggle-row" style="padding-top:10px;">
+          <label><input type="checkbox" id="editIsAdmin-${code}" ${userData.isAdmin ? 'checked':''}> 🔑 הרשאת מנהל מערכת</label>
+        </div>
+        <div class="activity-toggle-row">
+          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינוי קוד:</span>
+          <input type="text" id="editNewCode-${code}" placeholder="קוד חדש">
+          <button class="addrow" id="changeCodeBtn-${code}" style="border-color:#c77b2b;color:#c77b2b;">שנה קוד</button>
+          <span id="changeCodeMsg-${code}" style="font-size:.8rem;"></span>
+        </div>
         <div class="tab-bar" id="editSubTabBar-${code}" style="margin:10px 0 0;">
           <button class="tab-btn editsubtab-btn active" data-editsubtab="activity" data-code="${code}" style="--tabColor:var(--accent);">${icon("dumbbell",14)} פעילות</button>
           <button class="tab-btn editsubtab-btn" data-editsubtab="health" data-code="${code}" style="--tabColor:#8a3a52;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> בריאות</button>
@@ -1433,6 +1542,30 @@ async function showAdminUserPanel(code, label, userData){
     document.getElementById(`userStatsView-${code}`).style.display = "block";
     document.getElementById(`userEditForm-${code}`).style.display = "none";
   });
+  document.getElementById(`changeCodeBtn-${code}`).addEventListener("click", async ()=>{
+    const newCode = document.getElementById(`editNewCode-${code}`).value.trim();
+    const ccMsg = document.getElementById(`changeCodeMsg-${code}`);
+    if(!newCode){ ccMsg.style.color="#b04a4a"; ccMsg.textContent="הזן קוד חדש."; return; }
+    if(newCode === code){ ccMsg.style.color="#b04a4a"; ccMsg.textContent="זה כבר הקוד הנוכחי."; return; }
+    ccMsg.style.color = "var(--muted)"; ccMsg.textContent = "מעביר נתונים...";
+    try{
+      const users = await fbGetUsers();
+      if(users.find(u=>u.code === newCode)){
+        ccMsg.style.color="#b04a4a"; ccMsg.textContent="הקוד הזה כבר תפוס, בחר קוד אחר."; return;
+      }
+      await fbChangeUserCode(code, newCode);
+      const wasCurrentUser = currentUser && !currentUser.isAdmin && currentUser.code === code;
+      if(wasCurrentUser) currentUser.code = newCode;
+      ccMsg.style.color = "var(--teal)"; ccMsg.textContent = `✓ הקוד שונה ל-${newCode}`;
+      renderAdminUserList();
+      setTimeout(()=>{
+        document.getElementById("adminUserPanel").innerHTML = "";
+      }, 1500);
+    }catch(e){
+      ccMsg.style.color = "#b04a4a";
+      ccMsg.textContent = "שגיאה: " + (e && e.message ? e.message : e);
+    }
+  });
   document.getElementById(`saveEditBtn-${code}`).addEventListener("click", async ()=>{
     const newName = document.getElementById(`editName-${code}`).value.trim();
     const newGender = document.getElementById(`editGender-${code}`).value;
@@ -1449,8 +1582,9 @@ async function showAdminUserPanel(code, label, userData){
     const newStrengthTarget = parseFloat(document.getElementById(`editStrengthTarget-${code}`).value) || null;
     const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
     const newTrackSugar = document.getElementById(`editTrackSugar-${code}`).checked;
+    const newIsAdmin = document.getElementById(`editIsAdmin-${code}`).checked;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget, trackSugar:newTrackSugar};
+    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget, trackSugar:newTrackSugar, isAdmin:newIsAdmin};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
@@ -1721,7 +1855,7 @@ function periodPercentTable(log, pt, weightEntries, userData, weightCtx){
     return `<tr><td class="stat-period-label">${per.label}</td>${cells}</tr>`;
   }).join("");
 
-  return `<table class="period-table"><thead><tr><th>${headCells.join('</th><th>')}</th></tr></thead><tbody>${targetRow}${rows}</tbody></table>`;
+  return `<div style="font-size:.72rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:4px;">↔️ ניתן לגלול בטבלה לצפייה בכל הנתונים</div><div class="period-table-wrap"><table class="period-table"><thead><tr><th>${headCells.join('</th><th>')}</th></tr></thead><tbody>${targetRow}${rows}</tbody></table></div>`;
 }
 
 function dayTotals(dayData){
