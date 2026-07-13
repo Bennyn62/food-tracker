@@ -97,6 +97,8 @@
   tbody tr:nth-child(even){background:var(--rowbg);}
 
   select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);}
+  /* iOS Safari auto-zooms on focus when font-size < 16px; bump it only while focused so layout stays compact otherwise */
+  input:focus, select:focus, textarea:focus{font-size:16px;}
   input[type=number]{text-align:center;}
   .val{font-weight:600;color:var(--dark);}
   .subtotal-row td{background:var(--lightbg);font-weight:700;color:var(--dark);text-align:center;}
