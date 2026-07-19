@@ -908,25 +908,30 @@ document.getElementById("backToUserBtn").addEventListener("click", exitAdminMode
 function buildWeightEntrySection(){
   const section = document.createElement("section");
   const currentVal = (currentUser && currentUser.currentWeightVal) || "";
+  const currentWaist = (currentUser && currentUser.currentWaistVal) || "";
   section.innerHTML = `
     <h2 style="background:var(--brand);"><span>⚖️ משקל</span></h2>
     <div style="padding:14px 16px;">
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
         <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">משקל (ק״ג)</label><input type="number" id="userWeightInput" step="0.1" style="width:120px;" value="${currentVal}"></div>
-        <button id="userWeightSaveBtn" class="addrow">${icon("save",14)} שמור משקל</button>
+        <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">היקף מתניים (ס״מ)</label><input type="number" id="userWaistInput" step="0.5" style="width:140px;" value="${currentWaist}"></div>
+        <button id="userWeightSaveBtn" class="addrow">${icon("save",14)} שמור</button>
         <span id="userWeightMsg" style="font-size:.8rem;"></span>
       </div>
     </div>
   `;
   section.querySelector("#userWeightSaveBtn").addEventListener("click", async ()=>{
     const input = document.getElementById("userWeightInput");
+    const waistInput = document.getElementById("userWaistInput");
     const msg = document.getElementById("userWeightMsg");
     const val = parseFloat(input.value);
+    const waistVal = parseFloat(waistInput.value);
     if(isNaN(val) || val<=0){ msg.style.color="#b04a4a"; msg.textContent="הזן משקל תקין."; return; }
     msg.style.color = "var(--muted)"; msg.textContent = "שומר...";
     try{
-      await fbAddWeightEntry(currentUser.code, todayStr(), val, currentUser.currentWaistVal);
+      await fbAddWeightEntry(currentUser.code, todayStr(), val, isNaN(waistVal) ? currentUser.currentWaistVal : waistVal);
       currentUser.currentWeightVal = val;
+      if(!isNaN(waistVal)) currentUser.currentWaistVal = waistVal;
       if(currentUser.originalWeight == null) currentUser.originalWeight = val;
       msg.style.color = "var(--teal)"; msg.textContent = "✓ נשמר";
       recalcDaily();
@@ -2261,7 +2266,7 @@ function computeSleepHours(bedtime, wake){
 function buildSleepSection(){
   const section = document.createElement("section");
   section.innerHTML = `
-    <h2 style="background:var(--brand);"><span>${icon("bed")} ${t("sleepTitle")}</span><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span></h2>
+    <h2 style="background:#3d5a8a;"><span>${icon("bed")} ${t("sleepTitle")}</span><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span></h2>
     <div style="padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepBedtime")}</label><input type="time" id="sleepBedtime"></div>
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepWake")}</label><input type="time" id="sleepWake"><span id="sleepWakeComputed" style="font-size:.78rem;color:var(--teal);font-weight:600;margin-right:8px;"></span></div>
@@ -2317,10 +2322,12 @@ function buildActivitySection(){
   const hasSleep = !!(currentUser && currentUser.sleepTarget);
   container.innerHTML = "";
 
-  container.appendChild(buildWeightEntrySection());
-
   if(hasSleep){
     container.appendChild(buildSleepSection());
+  }
+
+  if(trackSugar){
+    container.appendChild(buildBloodSugarSection());
   }
 
   if(acts.steps || acts.running || acts.strength){
@@ -2361,9 +2368,7 @@ function buildActivitySection(){
     if(strengthEl) strengthEl.addEventListener("change", recalcDaily);
   }
 
-  if(trackSugar){
-    container.appendChild(buildBloodSugarSection());
-  }
+  container.appendChild(buildWeightEntrySection());
 }
 
 function bloodSugarStatus(val){
@@ -2377,7 +2382,7 @@ function bloodSugarStatus(val){
 function buildBloodSugarSection(){
   const section = document.createElement("section");
   section.innerHTML = `
-    <h2 style="background:var(--brand);"><span>${icon("trending")} סוכר בדם</span>${saveBtnHTML()}</h2>
+    <h2 style="background:#b0475a;"><span>${icon("trending")} סוכר בדם</span>${saveBtnHTML()}</h2>
     <div style="padding:14px 16px;">
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
         <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">רמת סוכר (mg/dL)</label><input type="number" id="bloodSugarValue" min="0" step="1" style="width:130px;"></div>
