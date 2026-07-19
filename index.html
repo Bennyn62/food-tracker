@@ -2343,16 +2343,15 @@ function buildActivitySection(){
     }
     const workoutSection = document.createElement("section");
     workoutSection.innerHTML = `
-      <h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span></h2>
+      <h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span>${saveBtnHTML()}</h2>
       <div style="padding:14px 16px;">
         <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
           ${fieldsHtml}
-          <button id="workoutSaveBtn" class="addrow">${icon("save",14)} שמור</button>
         </div>
       </div>
     `;
     container.appendChild(workoutSection);
-    workoutSection.querySelector("#workoutSaveBtn").addEventListener("click", saveDayData);
+    workoutSection.querySelector(".meal-save-btn").addEventListener("click", saveDayData);
     const stepsCountEl = document.getElementById("actStepsCount");
     if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
     const runDistEl = document.getElementById("actRunningDistance");
