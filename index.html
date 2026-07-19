@@ -2331,35 +2331,28 @@ function buildActivitySection(){
   }
 
   if(acts.steps || acts.running || acts.strength){
-    let rows = "";
+    let fieldsHtml = "";
     if(acts.steps){
-      rows += `<tr>
-        <td>${t("actSteps")}</td>
-        <td><input type="number" id="actStepsCount" min="0" step="100" placeholder="${t("phSteps")}"></td>
-      </tr>`;
+      fieldsHtml += `<div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("actSteps")}</label><input type="number" id="actStepsCount" min="0" step="100" placeholder="${t("phSteps")}" style="width:130px;"></div>`;
     }
     if(acts.running){
-      rows += `<tr>
-        <td>${t("actRunning")}</td>
-        <td><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="${t("phKm")}"></td>
-      </tr>`;
+      fieldsHtml += `<div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("actRunning")}</label><input type="number" id="actRunningDistance" min="0" step="0.1" placeholder="${t("phKm")}" style="width:120px;"></div>`;
     }
     if(acts.strength){
-      rows += `<tr>
-        <td>${t("actStrength")}</td>
-        <td><label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.9rem;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> ${t("trainedToday")}</label></td>
-      </tr>`;
+      fieldsHtml += `<div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("actStrength")}</label><label style="display:flex;align-items:center;gap:6px;font-size:.9rem;height:36px;"><input type="checkbox" id="actStrengthDone" style="width:auto;"> ${t("trainedToday")}</label></div>`;
     }
     const workoutSection = document.createElement("section");
     workoutSection.innerHTML = `
-      <h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span>${saveBtnHTML()}</h2>
-      <table>
-        <thead><tr><th style="width:35%">${t("colActivity")}</th><th>${t("colAmount")}</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <h2 style="background:var(--accent);"><span>${icon("dumbbell")} ${t("activityTitle")}</span></h2>
+      <div style="padding:14px 16px;">
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;">
+          ${fieldsHtml}
+          <button id="workoutSaveBtn" class="addrow">${icon("save",14)} שמור</button>
+        </div>
+      </div>
     `;
     container.appendChild(workoutSection);
-    workoutSection.querySelector(".meal-save-btn").addEventListener("click", saveDayData);
+    workoutSection.querySelector("#workoutSaveBtn").addEventListener("click", saveDayData);
     const stepsCountEl = document.getElementById("actStepsCount");
     if(stepsCountEl) stepsCountEl.addEventListener("input", recalcDaily);
     const runDistEl = document.getElementById("actRunningDistance");
