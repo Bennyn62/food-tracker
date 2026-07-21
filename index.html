@@ -192,18 +192,18 @@
 </head>
 <body>
 <div class="wrap">
-  <div id="connDiag">Connecting to Firebase...</div>
+  <div id="connDiag">מתחבר ל-Firebase...</div>
 
-  <div id="loginGate" dir="ltr" lang="en">
+  <div id="loginGate" dir="rtl" lang="he">
     <div class="eway-logo">
       <span class="eway-e">e</span><span class="eway-way">Way</span>
     </div>
     <div class="eway-tagline">Eat way younger you.</div>
-    <div class="sub" style="margin-bottom:0;">Enter the personal code you received to log in</div>
-    <input type="text" id="codeInput" placeholder="Your code" autocomplete="off" inputmode="numeric">
-    <button id="loginBtn">Log in</button>
+    <div class="sub" style="margin-bottom:0;">הזן את הקוד האישי שקיבלת כדי להיכנס</div>
+    <input type="text" id="codeInput" placeholder="הקוד שלך" autocomplete="off" inputmode="numeric">
+    <button id="loginBtn">כניסה</button>
     <div id="loginMsg"></div>
-    <div class="hint">Don't have a code? Contact your <a href="tel:0547738662" style="color:var(--teal);font-weight:700;text-decoration:none;">eWay</a> admin.</div>
+    <div class="hint">אין לך קוד? פנה למנהל <a href="tel:0547738662" style="color:var(--teal);font-weight:700;text-decoration:none;">eWay</a>.</div>
   </div>
 
   <div id="appArea">
@@ -220,7 +220,7 @@
     </div>
 
     <div id="adminUnlockRow" style="display:none;justify-content:center;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-      <input type="text" id="adminUnlockInput" placeholder="קוד מנהל" style="width:auto;max-width:180px;">
+      <input type="text" id="adminUnlockInput" placeholder="קוד מנהל" style="width:auto;max-width:180px;" inputmode="numeric">
       <button id="adminUnlockConfirm" class="btn-save" style="padding:8px 16px;border-radius:var(--radius-sm);">אישור</button>
       <span id="adminUnlockMsg" style="font-size:.82rem;"></span>
     </div>
@@ -577,18 +577,18 @@ function initFirebase(){
   try{
     if(typeof firebase === "undefined"){
       diag.className = "bad";
-      diag.textContent = "⚠️ Firebase library failed to load (check your internet connection and refresh the page).";
+      diag.textContent = "⚠️ ספריית Firebase לא נטענה (בדוק חיבור אינטרנט ורענן את הדף).";
       return;
     }
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     firebaseReady = true;
     diag.className = "ok";
-    diag.textContent = "✓ Connected to Firebase";
+    diag.textContent = "✓ מחובר ל-Firebase";
     setTimeout(()=>{ diag.style.display = "none"; }, 2500);
   }catch(e){
     diag.className = "bad";
-    diag.textContent = "⚠️ Firebase connection error: " + (e && e.message ? e.message : String(e));
+    diag.textContent = "⚠️ שגיאת חיבור ל-Firebase: " + (e && e.message ? e.message : String(e));
   }
 }
 
@@ -793,6 +793,26 @@ async function fbAddFood(food){
   const ref = await db.collection("foods").add(food);
   return ref.id;
 }
+
+const FOODS_CACHE_KEY = "eway_foods_cache_v1";
+const FOODS_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours — balances freshness vs. read savings
+
+function loadFoodsFromCache(){
+  try{
+    const raw = localStorage.getItem(FOODS_CACHE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(!parsed || !parsed.ts || !Array.isArray(parsed.foods) || parsed.foods.length === 0) return null;
+    if(Date.now() - parsed.ts > FOODS_CACHE_TTL_MS) return null;
+    return parsed.foods;
+  }catch(e){ return null; }
+}
+
+function saveFoodsToCache(foods){
+  try{
+    localStorage.setItem(FOODS_CACHE_KEY, JSON.stringify({ts: Date.now(), foods}));
+  }catch(e){ /* storage unavailable or full — safe to ignore, just skips caching */ }
+}
 async function fbUpdateFood(id, data){
   await db.collection("foods").doc(id).update(data);
 }
@@ -804,10 +824,10 @@ document.getElementById("codeInput").addEventListener("keydown", e=>{ if(e.key==
 async function doLogin(){
   const code = document.getElementById("codeInput").value.trim();
   const msg = document.getElementById("loginMsg");
-  if(!firebaseReady){ msg.style.color="#b04a4a"; msg.textContent="Still connecting to Firebase, try again in a moment."; return; }
-  if(!code){ msg.textContent = "Enter a code."; return; }
+  if(!firebaseReady){ msg.style.color="#b04a4a"; msg.textContent="עדיין מתחבר ל-Firebase, נסה שוב בעוד רגע."; return; }
+  if(!code){ msg.textContent = "הזן קוד."; return; }
   msg.style.color = "var(--muted)";
-  msg.textContent = "Checking...";
+  msg.textContent = "בודק...";
 
   try{
     const users = await fbGetUsers();
@@ -815,7 +835,7 @@ async function doLogin(){
     if(found){
       if(found.blocked){
         msg.style.color = "#b04a4a";
-        msg.textContent = "This user is blocked. Contact your admin.";
+        msg.textContent = "המשתמש חסום. פנה למנהל.";
         return;
       }
       currentUser = {code:found.code, name:found.name, isAdmin:false, canAdmin:!!found.isAdmin, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
@@ -830,10 +850,10 @@ async function doLogin(){
       return;
     }
     msg.style.color = "#b04a4a";
-    msg.textContent = "Code not recognized. Check again or contact your admin.";
+    msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
   }catch(e){
     msg.style.color = "#b04a4a";
-    msg.textContent = "Login error: " + (e && e.message ? e.message : String(e));
+    msg.textContent = "שגיאת התחברות: " + (e && e.message ? e.message : String(e));
   }
 }
 
@@ -910,12 +930,11 @@ function buildWeightEntrySection(){
   const currentVal = (currentUser && currentUser.currentWeightVal) || "";
   const currentWaist = (currentUser && currentUser.currentWaistVal) || "";
   section.innerHTML = `
-    <h2 style="background:var(--brand);"><span>⚖️ משקל</span></h2>
+    <h2 style="background:var(--brand);"><span>⚖️ משקל</span><button id="userWeightSaveBtn" title="שמור" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:var(--radius-sm);padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:.8rem;">${icon("save",14)}</button></h2>
     <div style="padding:14px 16px;">
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
         <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">משקל (ק״ג)</label><input type="number" id="userWeightInput" step="0.1" style="width:120px;" value="${currentVal}"></div>
         <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">היקף מתניים (ס״מ)</label><input type="number" id="userWaistInput" step="0.5" style="width:140px;" value="${currentWaist}"></div>
-        <button id="userWeightSaveBtn" class="addrow">${icon("save",14)} שמור</button>
         <span id="userWeightMsg" style="font-size:.8rem;"></span>
       </div>
     </div>
@@ -951,9 +970,15 @@ async function enterApp(){
   document.getElementById("appArea").style.display = "block";
   document.getElementById("whoLabel").textContent = currentUser.isAdmin ? "מנהל" : (t("hello") + ", " + currentUser.name);
 
-  try{
-    FOODS = await fbGetAllFoods();
-  }catch(e){ FOODS = [...BUILTIN_FOODS]; /* fallback if Firestore unreachable */ }
+  const cachedFoods = loadFoodsFromCache();
+  if(cachedFoods){
+    FOODS = cachedFoods;
+  }else{
+    try{
+      FOODS = await fbGetAllFoods();
+      saveFoodsToCache(FOODS);
+    }catch(e){ FOODS = [...BUILTIN_FOODS]; /* fallback if Firestore unreachable */ }
+  }
 
   if(currentUser.isAdmin){
     await enterAdminMode();
@@ -2266,7 +2291,7 @@ function computeSleepHours(bedtime, wake){
 function buildSleepSection(){
   const section = document.createElement("section");
   section.innerHTML = `
-    <h2 style="background:#3d5a8a;"><span>${icon("bed")} ${t("sleepTitle")}</span><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span></h2>
+    <h2 style="background:#3d5a8a;"><span>${icon("bed")} ${t("sleepTitle")}</span><div style="display:flex;align-items:center;gap:8px;"><span class="meal-total" id="sleepDurationLabel">${t("sleepDefault")}</span>${saveBtnHTML()}</div></h2>
     <div style="padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;">
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepBedtime")}</label><input type="time" id="sleepBedtime"></div>
       <div><label style="font-size:.8rem;color:var(--muted);display:block;margin-bottom:4px;">${t("sleepWake")}</label><input type="time" id="sleepWake"><span id="sleepWakeComputed" style="font-size:.78rem;color:var(--teal);font-weight:600;margin-right:8px;"></span></div>
@@ -2274,6 +2299,7 @@ function buildSleepSection(){
   `;
   section.querySelector("#sleepBedtime").addEventListener("change", onSleepInputChange);
   section.querySelector("#sleepWake").addEventListener("change", onSleepInputChange);
+  section.querySelector(".meal-save-btn").addEventListener("click", saveDayData);
   return section;
 }
 
@@ -2815,6 +2841,7 @@ document.getElementById("af-submit").addEventListener("click", async ()=>{
     const newId = await fbAddFood(newFood);
     newFood._id = newId;
     FOODS.push(newFood);
+    saveFoodsToCache(FOODS);
     document.querySelectorAll(".food-select").forEach(sel=>{
       const cur = sel.value;
       sel.innerHTML = foodOptions(cur);
@@ -2882,6 +2909,7 @@ function openRefEdit(idx){
     try{
       await fbUpdateFood(food._id, {n:newName, cat:newCat, kcal:newKcal, p:newP, f:newF, c:newC});
       food.n = newName; food.cat = newCat; food.kcal = newKcal; food.p = newP; food.f = newF; food.c = newC;
+      saveFoodsToCache(FOODS);
       document.querySelectorAll(".food-select").forEach(sel=>{
         const cur = sel.value;
         sel.innerHTML = foodOptions(cur);
