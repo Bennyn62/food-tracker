@@ -234,6 +234,14 @@
 
       <div id="adminPanel-manage" class="admin-tab-panel">
         <section>
+          <h2><span>⚙️ כותרת האפליקציה</span></h2>
+          <div style="padding:14px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="appTitleInput" placeholder="כותרת האפליקציה" style="flex:1;min-width:200px;">
+            <button class="addrow" id="appTitleSaveBtn">שמור כותרת</button>
+            <span id="appTitleMsg" style="font-size:.8rem;"></span>
+          </div>
+        </section>
+        <section>
           <h2><span>ניהול משתמשים</span></h2>
           <div class="admin-users" id="adminUserList"></div>
           <div style="padding:0 16px 14px;">
@@ -478,7 +486,7 @@ function applyStaticTranslations(){
   setText("instructionText", "instructionText");
   setText("dailyTotalTitle", "dailyTotalTitle");
   setText("logoutBtn", "logout");
-  setText("appTitle", "appTitle");
+  if(!appTitleOverride) setText("appTitle", "appTitle");
 
   const tabMap = {breakfast:"tabBreakfast", lunch:"tabLunch", dinner:"tabDinner", extra:"tabExtra", activity:"tabActivity", week:"tabWeek", month:"tabMonth"};
   Object.keys(tabMap).forEach(tabId=>{
@@ -652,6 +660,7 @@ const MEAL_TITLE_KEYS = {breakfast:"mealBreakfast", lunch:"mealLunch", dinner:"m
 function getMealTitle(mealId){ return t(MEAL_TITLE_KEYS[mealId] || mealId); }
 
 let currentUser = null;
+let appTitleOverride = null;
 let heartbeatInterval = null;
 let currentDate = todayStr();
 let currentLog = {};
@@ -708,6 +717,13 @@ function todayStr(){
 async function fbGetUsers(){
   const snap = await db.collection("users").get();
   return snap.docs.map(d => ({code: d.id, ...d.data()}));
+}
+async function fbGetAppSettings(){
+  const doc = await db.collection("settings").doc("app").get();
+  return doc.exists ? doc.data() : {};
+}
+async function fbSetAppTitle(title){
+  await db.collection("settings").doc("app").set({title}, {merge:true});
 }
 async function fbAddUser(code, data){
   await db.collection("users").doc(code).set({...data, createdAt: todayStr()});
@@ -877,6 +893,8 @@ async function enterAdminMode(){
   if(noteEl) noteEl.style.display = "block";
   const backBtn = document.getElementById("backToUserBtn");
   if(backBtn) backBtn.style.display = (currentUser && !currentUser.isAdmin) ? "inline-block" : "none";
+  const titleInput = document.getElementById("appTitleInput");
+  if(titleInput) titleInput.value = appTitleOverride || document.getElementById("appTitle").textContent;
   if(heartbeatInterval) clearInterval(heartbeatInterval);
   heartbeatInterval = setInterval(()=> renderAdminUserList(), 30000);
 }
@@ -925,6 +943,23 @@ document.getElementById("adminUnlockConfirm").addEventListener("click", async ()
 });
 document.getElementById("backToUserBtn").addEventListener("click", exitAdminMode);
 
+document.getElementById("appTitleSaveBtn").addEventListener("click", async ()=>{
+  const input = document.getElementById("appTitleInput");
+  const msg = document.getElementById("appTitleMsg");
+  const newTitle = input.value.trim();
+  if(!newTitle){ msg.style.color="#b04a4a"; msg.textContent="הזן כותרת."; return; }
+  msg.style.color = "var(--muted)"; msg.textContent = "שומר...";
+  try{
+    await fbSetAppTitle(newTitle);
+    appTitleOverride = newTitle;
+    document.getElementById("appTitle").textContent = newTitle;
+    msg.style.color = "var(--teal)"; msg.textContent = "✓ נשמר";
+  }catch(e){
+    msg.style.color = "#b04a4a";
+    msg.textContent = "שגיאה: " + (e && e.message ? e.message : e);
+  }
+});
+
 function buildWeightEntrySection(){
   const section = document.createElement("section");
   const currentVal = (currentUser && currentUser.currentWeightVal) || "";
@@ -969,6 +1004,14 @@ async function enterApp(){
   document.getElementById("loginGate").style.display = "none";
   document.getElementById("appArea").style.display = "block";
   document.getElementById("whoLabel").textContent = currentUser.isAdmin ? "מנהל" : (t("hello") + ", " + currentUser.name);
+
+  try{
+    const settings = await fbGetAppSettings();
+    if(settings && settings.title){
+      document.getElementById("appTitle").textContent = settings.title;
+      appTitleOverride = settings.title;
+    }
+  }catch(e){ /* ignore, keep default title */ }
 
   const cachedFoods = loadFoodsFromCache();
   if(cachedFoods){
@@ -2481,13 +2524,73 @@ function buildMealSection(meal, targetContainer){
       <tbody id="body-${meal.id}"></tbody>
       <tfoot><tr class="subtotal-row"><td colspan="2" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t("totalFor")}${mealTitle}</td><td id="sum-kcal-${meal.id}">0</td><td id="sum-p-${meal.id}">0</td><td id="sum-f-${meal.id}">0</td><td id="sum-c-${meal.id}">0</td><td></td></tr></tfoot>
     </table>
-    <div class="row-actions"><button class="addrow" data-meal="${meal.id}">${t("addRow")}</button></div>
+    <div class="row-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="addrow" data-meal="${meal.id}">${t("addRow")}</button>
+      <button class="addrow ai-photo-btn" data-meal="${meal.id}" style="border-color:var(--accent);color:var(--accent);">📷 צלם מזון</button>
+      <input type="file" accept="image/*" capture="environment" class="ai-photo-input" data-meal="${meal.id}" style="display:none;">
+      <span class="ai-photo-status" data-meal="${meal.id}" style="font-size:.8rem;"></span>
+    </div>
+    <div class="ai-photo-result" data-meal="${meal.id}" style="display:none;padding:12px 16px;background:var(--lightbg);"></div>
   `;
   container.appendChild(section);
   const body = section.querySelector(`#body-${meal.id}`);
   for(let i=0;i<meal.rows;i++) body.appendChild(buildRow(meal.id));
-  section.querySelector(".addrow").addEventListener("click", ()=>body.appendChild(buildRow(meal.id)));
+  section.querySelector(".addrow:not(.ai-photo-btn)").addEventListener("click", ()=>body.appendChild(buildRow(meal.id)));
   section.querySelector(".meal-save-btn").addEventListener("click", saveDayData);
+
+  const photoBtn = section.querySelector(".ai-photo-btn");
+  const photoInput = section.querySelector(".ai-photo-input");
+  const photoStatus = section.querySelector(".ai-photo-status");
+  const photoResult = section.querySelector(".ai-photo-result");
+
+  photoBtn.addEventListener("click", ()=> photoInput.click());
+  photoInput.addEventListener("change", async ()=>{
+    const file = photoInput.files[0];
+    if(!file) return;
+    photoStatus.style.color = "var(--muted)";
+    photoStatus.textContent = "מנתח תמונה...";
+    photoResult.style.display = "none";
+    try{
+      const aiData = await analyzeFoodPhoto(file);
+      photoStatus.textContent = "";
+      photoResult.style.display = "block";
+      photoResult.innerHTML = `
+        <div style="font-weight:700;color:var(--dark);margin-bottom:8px;">🤖 תוצאת הניתוח — בדוק ותקן במידת הצורך:</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div><label style="font-size:.78rem;color:var(--muted);display:block;">תיאור</label><input type="text" class="ai-desc" value="${aiData.description || ''}" style="width:160px;"></div>
+          <div><label style="font-size:.78rem;color:var(--muted);display:block;">משקל (גר')</label><input type="number" class="ai-weight" value="${Math.round(aiData.weight_g||0)}" style="width:90px;"></div>
+          <div><label style="font-size:.78rem;color:var(--muted);display:block;">קלוריות</label><input type="number" class="ai-kcal" value="${Math.round(aiData.kcal||0)}" style="width:90px;"></div>
+          <div><label style="font-size:.78rem;color:var(--muted);display:block;">חלבון</label><input type="number" class="ai-protein" value="${(aiData.protein_g||0).toFixed(1)}" style="width:80px;"></div>
+          <div><label style="font-size:.78rem;color:var(--muted);display:block;">שומן</label><input type="number" class="ai-fat" value="${(aiData.fat_g||0).toFixed(1)}" style="width:80px;"></div>
+          <div><label style="font-size:.78rem;color:var(--muted);display:block;">פחמימה</label><input type="number" class="ai-carb" value="${(aiData.carb_g||0).toFixed(1)}" style="width:80px;"></div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="addrow ai-confirm-btn" style="border-color:var(--teal);color:var(--teal);">${icon("check",14)} אשר והוסף</button>
+          <button class="addrow ai-cancel-btn" style="border-color:var(--muted);color:var(--muted);">ביטול</button>
+        </div>
+      `;
+      photoResult.querySelector(".ai-confirm-btn").addEventListener("click", ()=>{
+        const confirmedData = {
+          description: photoResult.querySelector(".ai-desc").value,
+          weight_g: parseFloat(photoResult.querySelector(".ai-weight").value) || 0,
+          kcal: parseFloat(photoResult.querySelector(".ai-kcal").value) || 0,
+          protein_g: parseFloat(photoResult.querySelector(".ai-protein").value) || 0,
+          fat_g: parseFloat(photoResult.querySelector(".ai-fat").value) || 0,
+          carb_g: parseFloat(photoResult.querySelector(".ai-carb").value) || 0,
+        };
+        insertAIScannedRow(meal.id, confirmedData);
+        photoResult.style.display = "none";
+        photoInput.value = "";
+      });
+      photoResult.querySelector(".ai-cancel-btn").addEventListener("click", ()=>{
+        photoResult.style.display = "none";
+        photoInput.value = "";
+      });
+    }catch(e){
+      photoStatus.style.color = "#b04a4a";
+      photoStatus.textContent = "שגיאה: " + (e && e.message ? e.message : e);
+    }
+  });
 }
 
 function buildRow(mealId, saved){
@@ -2533,6 +2636,29 @@ function recalcRow(tr, mealId){
   tr.querySelector(".c").textContent = c.toFixed(1);
   recalcMeal(mealId);
   recalcDaily();
+}
+
+function insertAIScannedRow(mealId, aiData){
+  const body = document.getElementById(`body-${mealId}`);
+  const tr = document.createElement("tr");
+  tr.dataset.meal = mealId;
+  const weight = parseFloat(aiData.weight_g) || 100;
+  tr.dataset.kcal100 = (parseFloat(aiData.kcal)||0) / weight * 100;
+  tr.dataset.p100 = (parseFloat(aiData.protein_g)||0) / weight * 100;
+  tr.dataset.f100 = (parseFloat(aiData.fat_g)||0) / weight * 100;
+  tr.dataset.c100 = (parseFloat(aiData.carb_g)||0) / weight * 100;
+  tr.innerHTML = `
+    <td><input type="text" class="food-select" value="📷 ${aiData.description || 'זוהה ע״י AI'}" readonly style="background:var(--lightbg);cursor:default;"></td>
+    <td><input type="number" class="qty" min="0" step="1" value="${Math.round(weight)}"></td>
+    <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
+    <td><button class="delrow" title="מחק שורה">${icon("x",13)}</button></td>
+  `;
+  tr.querySelector(".qty").addEventListener("input", ()=>recalcRow(tr, mealId));
+  tr.querySelector(".delrow").addEventListener("click", ()=>{
+    tr.remove(); recalcMeal(mealId); recalcDaily();
+  });
+  body.appendChild(tr);
+  recalcRow(tr, mealId);
 }
 
 function recalcMeal(mealId){
@@ -2756,6 +2882,34 @@ function renderHistory(){
 
 // ---------------- Custom foods ----------------
 const USDA_API_KEY = "DEMO_KEY";
+const FOOD_AI_WORKER_URL = "https://damp-cell-9775.bennyn62.workers.dev/";
+
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const result = reader.result; // "data:image/jpeg;base64,...."
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function analyzeFoodPhoto(file){
+  const base64 = await fileToBase64(file);
+  const res = await fetch(FOOD_AI_WORKER_URL, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({image: base64, mimeType: file.type || "image/jpeg"}),
+  });
+  const data = await res.json();
+  if(!res.ok || data.error){
+    throw new Error(data.error || "שגיאה בניתוח התמונה");
+  }
+  return data; // {description, weight_g, kcal, protein_g, fat_g, carb_g}
+}
 
 async function searchUSDA(query){
   const resultsEl = document.getElementById("usda-search-results");
