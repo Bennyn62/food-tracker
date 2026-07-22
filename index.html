@@ -2594,7 +2594,32 @@ function buildMealSection(meal, targetContainer){
   });
 }
 
+function buildCustomFoodRow(mealId, name, qty, kcal100, p100, f100, c100){
+  const tr = document.createElement("tr");
+  tr.dataset.meal = mealId;
+  tr.dataset.custom = "true";
+  tr.dataset.kcal100 = kcal100;
+  tr.dataset.p100 = p100;
+  tr.dataset.f100 = f100;
+  tr.dataset.c100 = c100;
+  tr.innerHTML = `
+    <td><input type="text" class="food-select" value="${name}" readonly style="background:var(--lightbg);cursor:default;"></td>
+    <td><input type="number" class="qty" min="0" step="1" value="${qty}"></td>
+    <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
+    <td><button class="delrow" title="מחק שורה">${icon("x",13)}</button></td>
+  `;
+  tr.querySelector(".qty").addEventListener("input", ()=>recalcRow(tr, mealId));
+  tr.querySelector(".delrow").addEventListener("click", ()=>{
+    tr.remove(); recalcMeal(mealId); recalcDaily();
+  });
+  recalcRow(tr, mealId);
+  return tr;
+}
+
 function buildRow(mealId, saved){
+  if(saved && saved.custom){
+    return buildCustomFoodRow(mealId, saved.name, saved.qty, saved.kcal100, saved.p100, saved.f100, saved.c100);
+  }
   const tr = document.createElement("tr");
   tr.dataset.meal = mealId;
   tr.dataset.kcal100 = saved ? saved.kcal100 : 0;
@@ -2641,25 +2666,14 @@ function recalcRow(tr, mealId){
 
 function insertAIScannedRow(mealId, aiData){
   const body = document.getElementById(`body-${mealId}`);
-  const tr = document.createElement("tr");
-  tr.dataset.meal = mealId;
   const weight = parseFloat(aiData.weight_g) || 100;
-  tr.dataset.kcal100 = (parseFloat(aiData.kcal)||0) / weight * 100;
-  tr.dataset.p100 = (parseFloat(aiData.protein_g)||0) / weight * 100;
-  tr.dataset.f100 = (parseFloat(aiData.fat_g)||0) / weight * 100;
-  tr.dataset.c100 = (parseFloat(aiData.carb_g)||0) / weight * 100;
-  tr.innerHTML = `
-    <td><input type="text" class="food-select" value="📷 ${aiData.description || 'זוהה ע״י AI'}" readonly style="background:var(--lightbg);cursor:default;"></td>
-    <td><input type="number" class="qty" min="0" step="1" value="${Math.round(weight)}"></td>
-    <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
-    <td><button class="delrow" title="מחק שורה">${icon("x",13)}</button></td>
-  `;
-  tr.querySelector(".qty").addEventListener("input", ()=>recalcRow(tr, mealId));
-  tr.querySelector(".delrow").addEventListener("click", ()=>{
-    tr.remove(); recalcMeal(mealId); recalcDaily();
-  });
+  const kcal100 = (parseFloat(aiData.kcal)||0) / weight * 100;
+  const p100 = (parseFloat(aiData.protein_g)||0) / weight * 100;
+  const f100 = (parseFloat(aiData.fat_g)||0) / weight * 100;
+  const c100 = (parseFloat(aiData.carb_g)||0) / weight * 100;
+  const name = "📷 " + (aiData.description || "זוהה ע״י AI");
+  const tr = buildCustomFoodRow(mealId, name, Math.round(weight), kcal100, p100, f100, c100);
   body.appendChild(tr);
-  recalcRow(tr, mealId);
 }
 
 function recalcMeal(mealId){
@@ -2788,13 +2802,15 @@ function collectMealData(mealId){
     const name = tr.querySelector(".food-select").value;
     const qty = parseFloat(tr.querySelector(".qty").value) || 0;
     if(name && qty > 0){
-      out.push({
+      const entry = {
         name, qty,
         kcal100: parseFloat(tr.dataset.kcal100)||0,
         p100: parseFloat(tr.dataset.p100)||0,
         f100: parseFloat(tr.dataset.f100)||0,
         c100: parseFloat(tr.dataset.c100)||0,
-      });
+      };
+      if(tr.dataset.custom === "true") entry.custom = true;
+      out.push(entry);
     }
   });
   return out;
