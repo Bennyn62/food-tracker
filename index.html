@@ -304,6 +304,13 @@
             </select>
           </div>
           <div class="activity-toggle-row">
+            <span style="font-size:.85rem;color:var(--muted);font-weight:600;">🎯 מטרת המשתמש:</span>
+            <select id="newUserGoal">
+              <option value="lose">ירידה במשקל</option>
+              <option value="gain">עליה במשקל</option>
+            </select>
+          </div>
+          <div class="activity-toggle-row">
             <label><input type="checkbox" id="newUserIsAdmin"> 🔑 הרשאת מנהל מערכת (הקוד של המשתמש הזה ישמש גם לכניסה למסך הניהול)</label>
           </div>
           <div class="tab-bar" id="addUserSubTabBar" style="margin:0 16px 16px;">
@@ -854,7 +861,7 @@ async function doLogin(){
         msg.textContent = "המשתמש חסום. פנה למנהל.";
         return;
       }
-      currentUser = {code:found.code, name:found.name, isAdmin:false, canAdmin:!!found.isAdmin, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
+      currentUser = {code:found.code, name:found.name, isAdmin:false, canAdmin:!!found.isAdmin, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", goal:found.goal||"lose", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
       await enterApp();
       return;
     }
@@ -982,12 +989,14 @@ function buildWeightEntrySection(){
     const waistVal = parseFloat(waistInput.value);
     if(isNaN(val) || val<=0){ msg.style.color="#b04a4a"; msg.textContent="הזן משקל תקין."; return; }
     msg.style.color = "var(--muted)"; msg.textContent = "שומר...";
+    const prevWeight = currentUser.currentWeightVal;
     try{
       await fbAddWeightEntry(currentUser.code, todayStr(), val, isNaN(waistVal) ? currentUser.currentWaistVal : waistVal);
       currentUser.currentWeightVal = val;
       if(!isNaN(waistVal)) currentUser.currentWaistVal = waistVal;
       if(currentUser.originalWeight == null) currentUser.originalWeight = val;
       msg.style.color = "var(--teal)"; msg.textContent = "✓ נשמר";
+      weightChangeToast(prevWeight, val);
       recalcDaily();
       renderWeekSummary();
       renderMonthSummary();
@@ -1084,6 +1093,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const sleepTarget = parseFloat(document.getElementById("newUserSleepTarget").value) || null;
   const trackSugar = document.getElementById("newUserTrackSugar").checked;
   const isAdminFlag = document.getElementById("newUserIsAdmin").checked;
+  const goal = document.getElementById("newUserGoal").value;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
   if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -1096,7 +1106,7 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
     }
     await fbAddUser(code, {name, gender, height, weight, waist, age, language,
       activities: {steps:actSteps, running:actRunning, strength:actStrength},
-      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget, trackSugar, isAdmin:isAdminFlag});
+      stepsTarget, runningTarget, strengthWeeklyTarget, sleepTarget, trackSugar, isAdmin:isAdminFlag, goal});
     document.getElementById("newUserName").value = "";
     document.getElementById("newUserCode").value = "";
     document.getElementById("newUserHeight").value = "";
@@ -1171,8 +1181,24 @@ function buildWeightChartSVG(entries, target){
   if(!entries || entries.length === 0) return `<div style="color:var(--muted);font-size:.82rem;">אין עדיין נתונים לגרף.</div>`;
   const asc = [...entries].sort((a,b)=> a.date < b.date ? -1 : 1);
   const w = 600, h = 140, padL = 34, padR = 10, padT = 10, padB = 22;
+  const originalWeight = asc[0].weight;
+  const startDate = new Date(asc[0].date);
+  const targetVal = target && target.target ? target.target : null;
+  // Expected trajectory: rate recalculates from the projected weight at each step (dynamic pace), not a fixed line from the start
+  const expectedValues = [];
+  let projected = originalWeight;
+  let lastDate = startDate;
+  asc.forEach(e=>{
+    const d = new Date(e.date);
+    const weeksElapsed = Math.max(0, (d - lastDate) / (7*86400000));
+    const rate = weeklyLossTarget(projected);
+    projected = projected - rate * weeksElapsed;
+    if(targetVal != null) projected = Math.max(projected, targetVal);
+    expectedValues.push(projected);
+    lastDate = d;
+  });
   const values = asc.map(e=>e.weight);
-  let minV = Math.min(...values), maxV = Math.max(...values);
+  let minV = Math.min(...values, ...expectedValues), maxV = Math.max(...values, ...expectedValues);
   if(target && target.target){ minV = Math.min(minV, target.target); maxV = Math.max(maxV, target.target); }
   if(minV === maxV){ minV -= 1; maxV += 1; }
   const pad = (maxV-minV)*0.1;
@@ -1181,6 +1207,7 @@ function buildWeightChartSVG(entries, target){
   const yFor = (v)=> padT + (h-padT-padB) * (1 - (v-minV)/(maxV-minV));
   const xFor = (i)=> padL + i*xStep;
   const points = asc.map((e,i)=> `${xFor(i)},${yFor(e.weight)}`).join(" ");
+  const expectedPoints = asc.map((e,i)=> `${xFor(i)},${yFor(expectedValues[i])}`).join(" ");
   let targetLine = "";
   if(target && target.target){
     const ty = yFor(target.target);
@@ -1190,10 +1217,16 @@ function buildWeightChartSVG(entries, target){
   const dots = asc.map((e,i)=> `<circle cx="${xFor(i)}" cy="${yFor(e.weight)}" r="3" fill="#2f6b5e"/>`).join("");
   const firstLabel = `<text x="${padL}" y="${h-4}" font-size="9" fill="#5b6b66">${asc[0].date.slice(5)}</text>`;
   const lastLabel = asc.length>1 ? `<text x="${w-padR}" y="${h-4}" font-size="9" fill="#5b6b66" text-anchor="end">${asc[asc.length-1].date.slice(5)}</text>` : "";
+  const legend = `<g font-size="9">
+    <line x1="${w-140}" y1="8" x2="${w-124}" y2="8" stroke="#2f6b5e" stroke-width="2"/><text x="${w-120}" y="11" fill="#2f6b5e">נמדד</text>
+    <line x1="${w-70}" y1="8" x2="${w-54}" y2="8" stroke="#8a3a52" stroke-width="2" stroke-dasharray="4,3"/><text x="${w-50}" y="11" fill="#8a3a52">צפוי</text>
+  </g>`;
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);">
     ${targetLine}
+    <polyline points="${expectedPoints}" fill="none" stroke="#8a3a52" stroke-width="1.5" stroke-dasharray="4,3"/>
     <polyline points="${points}" fill="none" stroke="#2f6b5e" stroke-width="2"/>
     ${dots}
+    ${legend}
     ${firstLabel}${lastLabel}
   </svg>`;
 }
@@ -1273,6 +1306,7 @@ async function renderWeightLog(code, userData){
     const tw = calcTargetWeight(userData.height, userData.age, userData.gender);
     const chartEl = document.getElementById(`weightChart-${code}`);
     if(chartEl) chartEl.innerHTML = buildWeightChartSVG(entries, tw);
+
     if(entries.length === 0){
       body.innerHTML = `<tr><td colspan="5" style="color:var(--muted);">אין עדיין מדידות משקל.</td></tr>`;
       return;
@@ -1364,10 +1398,11 @@ function lastWeekOfPeriodWeight(entries, periodEnd, windowDays){
 
 function pctColor(pct){
   if(pct === null || pct === undefined) return null;
-  if(pct < 0) return "#b04a4a";
-  if(pct >= 85 && pct <= 115) return "#2e7d4f";
-  if((pct >= 70 && pct < 85) || (pct > 115 && pct <= 130)) return "#c77b2b";
-  return "#b04a4a";
+  if(pct < 0) return "#e07a7a";       // wrong direction — light red
+  if(pct <= 70) return "#3d7ab8";     // up to 70% — blue
+  if(pct <= 80) return "#d4a017";     // up to 80% — yellow
+  if(pct <= 100) return "#2e7d4f";    // up to 100% — green
+  return "#e07a7a";                   // over 100% — light red
 }
 
 function pctCell(pct){
@@ -1384,7 +1419,7 @@ function weightColumnCell(periodKey, ctx){
   if(ctx.originalWeight == null || ctx.currentWeight == null) return "—";
   if(periodKey === "week"){
     const avgWeeklyLoss = (ctx.originalWeight - ctx.currentWeight) / weeksSinceReg;
-    return pctCell(Math.round((avgWeeklyLoss / WEEKLY_WEIGHT_LOSS_TARGET) * 100));
+    return pctCell(Math.round((avgWeeklyLoss / weeklyLossTarget(ctx.currentWeight)) * 100));
   }
   if(periodKey === "month"){
     const monthsSinceReg = Math.max(1, weeksSinceReg/4.345);
@@ -1393,7 +1428,7 @@ function weightColumnCell(periodKey, ctx){
     const w = lastWeekOfPeriodWeight(ctx.weightEntries, effEnd);
     const useW = (w!=null) ? w : ctx.currentWeight;
     const avgLoss = (ctx.originalWeight - useW) / monthsSinceReg;
-    const target = WEEKLY_WEIGHT_LOSS_TARGET * 4.345;
+    const target = weeklyLossTarget(ctx.currentWeight) * 4.345;
     return pctCell(Math.round((avgLoss/target)*100));
   }
   if(periodKey === "year"){
@@ -1403,7 +1438,7 @@ function weightColumnCell(periodKey, ctx){
     const w = lastWeekOfPeriodWeight(ctx.weightEntries, effEnd);
     const useW = (w!=null) ? w : ctx.currentWeight;
     const avgLoss = (ctx.originalWeight - useW) / yearsSinceReg;
-    const target = WEEKLY_WEIGHT_LOSS_TARGET * 52;
+    const target = weeklyLossTarget(ctx.currentWeight) * 52;
     return pctCell(Math.round((avgLoss/target)*100));
   }
   return "—";
@@ -1457,12 +1492,12 @@ async function showAdminUserPanel(code, label, userData){
   }
 
   let weeksToGoalHtml = "—";
-  if(tw && originalWeight!=null){
-    const totalDiff = originalWeight - tw.target;
-    if(totalDiff <= 0){
+  if(tw && currentWeightVal!=null){
+    const remainingDiff = currentWeightVal - tw.target;
+    if(remainingDiff <= 0){
       weeksToGoalHtml = "🎉 היעד הושג";
     }else{
-      const weeks = Math.round(totalDiff / WEEKLY_WEIGHT_LOSS_TARGET);
+      const weeks = Math.round(remainingDiff / weeklyLossTarget(currentWeightVal));
       weeksToGoalHtml = `${weeks} שבועות`;
     }
   }
@@ -1507,6 +1542,13 @@ async function showAdminUserPanel(code, label, userData){
           <div class="af-field"><label>שפה</label><select id="editLanguage-${code}"><option value="he" ${userData.language!=='en'?'selected':''}>עברית</option><option value="en" ${userData.language==='en'?'selected':''}>English</option></select></div>
         </div>
         <div class="activity-toggle-row" style="padding-top:10px;">
+          <span style="font-size:.85rem;color:var(--muted);font-weight:600;">🎯 מטרת המשתמש:</span>
+          <select id="editGoal-${code}">
+            <option value="lose" ${userData.goal!=='gain'?'selected':''}>ירידה במשקל</option>
+            <option value="gain" ${userData.goal==='gain'?'selected':''}>עליה במשקל</option>
+          </select>
+        </div>
+        <div class="activity-toggle-row">
           <label><input type="checkbox" id="editIsAdmin-${code}" ${userData.isAdmin ? 'checked':''}> 🔑 הרשאת מנהל מערכת</label>
         </div>
         <div class="activity-toggle-row">
@@ -1699,8 +1741,9 @@ async function showAdminUserPanel(code, label, userData){
     const newSleepTarget = parseFloat(document.getElementById(`editSleepTarget-${code}`).value) || null;
     const newTrackSugar = document.getElementById(`editTrackSugar-${code}`).checked;
     const newIsAdmin = document.getElementById(`editIsAdmin-${code}`).checked;
+    const newGoal = document.getElementById(`editGoal-${code}`).value;
     const newActivities = {steps:newActSteps, running:newActRunning, strength:newActStrength};
-    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget, trackSugar:newTrackSugar, isAdmin:newIsAdmin};
+    const payload = {name:newName, gender:newGender, height:newHeight, weight:newWeight, waist:newWaist, age:newAge, language:newLanguage, activities:newActivities, stepsTarget:newStepsTarget, runningTarget:newRunningTarget, strengthWeeklyTarget:newStrengthTarget, sleepTarget:newSleepTarget, trackSugar:newTrackSugar, isAdmin:newIsAdmin, goal:newGoal};
     try{
       await fbUpdateUser(code, payload);
       renderAdminUserList();
@@ -1833,7 +1876,9 @@ function pctOf(val, target){
   return Math.round((val/target)*100);
 }
 
-const WEEKLY_WEIGHT_LOSS_TARGET = 0.3; // kg/week
+function weeklyLossTarget(originalWeight){
+  return (originalWeight || 0) * 0.01; // healthy target: 1% of body weight per week
+}
 
 function daysBetween(startStr, endStr){
   const d1 = new Date(startStr), d2 = new Date(endStr);
@@ -2031,16 +2076,16 @@ function renderMonthSummary(){
   }
 
   const cards = [
-    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
+    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1, emphasize:true},
     {val:stats.f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
     {val:stats.c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
-    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
   ];
 
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
     const denom = currentUser.originalWeight - currentUser.targetWeightVal;
     const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
-    cards.push({special:"weightJourney", pct: journeyPct});
+    cards.push({special:"weightJourney", pct: journeyPct, targetWeight: currentUser.targetWeightVal});
   }
 
   if(currentUser && currentUser.activities){
@@ -2108,16 +2153,16 @@ function renderYearSummary(){
   }
 
   const cards = [
-    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
+    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1, emphasize:true},
     {val:stats.f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
     {val:stats.c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
-    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
   ];
 
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
     const denom = currentUser.originalWeight - currentUser.targetWeightVal;
     const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
-    cards.push({special:"weightJourney", pct: journeyPct});
+    cards.push({special:"weightJourney", pct: journeyPct, targetWeight: currentUser.targetWeightVal});
   }
 
   if(currentUser && currentUser.activities){
@@ -2185,16 +2230,16 @@ function renderWeekSummary(){
   }
 
   const cards = [
-    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
+    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1, emphasize:true},
     {val:stats.f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
     {val:stats.c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
-    {val:stats.p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:` ${t("unitG")}`, dec:1},
+    {val:stats.kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,"") + t("avgDaily"), unit:"", dec:0},
   ];
 
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
     const denom = currentUser.originalWeight - currentUser.targetWeightVal;
     const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
-    cards.push({special:"weightJourney", pct: journeyPct});
+    cards.push({special:"weightJourney", pct: journeyPct, targetWeight: currentUser.targetWeightVal});
   }
 
   if(currentUser && currentUser.activities){
@@ -2526,7 +2571,7 @@ function buildMealSection(meal, targetContainer){
     </table>
     <div class="row-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <button class="addrow" data-meal="${meal.id}">${t("addRow")}</button>
-      <button class="addrow ai-photo-btn" data-meal="${meal.id}" style="border-color:var(--accent);color:var(--accent);">📷 צלם מזון</button>
+      <button class="addrow ai-photo-btn" data-meal="${meal.id}" style="background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;">📷 צלם מזון</button>
       <input type="file" accept="image/*" capture="environment" class="ai-photo-input" data-meal="${meal.id}" style="display:none;">
       <span class="ai-photo-status" data-meal="${meal.id}" style="font-size:.8rem;"></span>
     </div>
@@ -2566,7 +2611,7 @@ function buildMealSection(meal, targetContainer){
           <div><label style="font-size:.78rem;color:var(--muted);display:block;">פחמימה</label><input type="number" class="ai-carb" value="${(aiData.carb_g||0).toFixed(1)}" style="width:80px;"></div>
         </div>
         <div style="margin-top:10px;display:flex;gap:8px;">
-          <button class="addrow ai-confirm-btn" style="border-color:var(--teal);color:var(--teal);">${icon("check",14)} אשר והוסף</button>
+          <button class="addrow ai-confirm-btn" style="background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700;">${icon("check",14)} אשר והוסף</button>
           <button class="addrow ai-cancel-btn" style="border-color:var(--muted);color:var(--muted);">ביטול</button>
         </div>
       `;
@@ -2604,7 +2649,7 @@ function buildCustomFoodRow(mealId, name, qty, kcal100, p100, f100, c100){
   tr.dataset.c100 = c100;
   tr.innerHTML = `
     <td><input type="text" class="food-select" value="${name}" readonly style="background:var(--lightbg);cursor:default;"></td>
-    <td><input type="number" class="qty" min="0" step="1" value="${qty}"></td>
+    <td><input type="number" class="qty" min="0" step="1" value="${qty}" inputmode="numeric"></td>
     <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
     <td><button class="delrow" title="מחק שורה">${icon("x",13)}</button></td>
   `;
@@ -2628,7 +2673,7 @@ function buildRow(mealId, saved){
   tr.dataset.c100 = saved ? saved.c100 : 0;
   tr.innerHTML = `
     <td><select class="food-select">${foodOptions(saved ? saved.name : "")}</select></td>
-    <td><input type="number" class="qty" min="0" step="1" placeholder="0" value="${saved ? saved.qty : ''}"></td>
+    <td><input type="number" class="qty" min="0" step="1" placeholder="0" value="${saved ? saved.qty : ''}" inputmode="numeric"></td>
     <td class="val kcal">0</td><td class="val p">0</td><td class="val f">0</td><td class="val c">0</td>
     <td><button class="delrow" title="מחק שורה">${icon("x",13)}</button></td>
   `;
@@ -2717,7 +2762,8 @@ function cardHTML(cd){
   if(cd.special === "weightJourney"){
     const clamped = Math.max(0, Math.min(100, cd.pct));
     const barColor = pctColor(Math.round(cd.pct)) || "var(--accent)";
-    return `<div class="dt-card"><div class="lbl">${t("weightJourneyLabel")}</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
+    const label = cd.targetWeight!=null ? `${t("weightJourneyLabel")} (${cd.targetWeight})` : t("weightJourneyLabel");
+    return `<div class="dt-card"><div class="lbl">${label}</div><div class="num">${Math.round(cd.pct)}%</div><div class="bar"><div class="bar-fill" style="width:${clamped}%;background:${barColor};"></div></div></div>`;
   }
   if(cd.special === "bloodSugar"){
     const color = cd.status ? cd.status.color : "var(--dark)";
@@ -2738,7 +2784,9 @@ function cardHTML(cd){
     const barColor = pctColor(Math.round(rawPct)) || "var(--accent)";
     const delta = cd.val - cd.target;
     const deltaTxt = delta>=0 ? `+${delta.toFixed(0)}${cd.unit} ${t("overTarget")}` : `${Math.abs(delta).toFixed(0)}${cd.unit} ${t("underTarget")}`;
-    return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:var(--muted);">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
+    const emphStyle = cd.emphasize ? `border:2px solid ${barColor};box-shadow:0 0 0 3px ${barColor}22;` : "";
+    const numSize = cd.emphasize ? "1.4rem" : "1.2rem";
+    return `<div class="dt-card" style="${emphStyle}"><div class="lbl" style="${cd.emphasize?'font-weight:800;':''}">${cd.label}</div><div class="num" style="font-size:${numSize};">${cd.val.toFixed(cd.dec)}${cd.unit} <span style="font-size:.7rem;color:var(--muted);">/ ${cd.target}${cd.unit}</span></div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${barColor};"></div></div><div class="delta" style="color:${barColor};">${deltaTxt}</div></div>`;
   }
   return `<div class="dt-card"><div class="lbl">${cd.label}</div><div class="num">${cd.val.toFixed(cd.dec)}${cd.unit}</div></div>`;
 }
@@ -2752,15 +2800,15 @@ function recalcDaily(){
     c += parseFloat(document.getElementById(`sum-c-${m.id}`).textContent)||0;
   });
   const cards = [
-    {val:kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,""), unit:"", dec:0},
+    {val:p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1, emphasize:true},
     {val:f, target:currentTargets.f, label:t("labelFat").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1},
     {val:c, target:currentTargets.c, label:t("labelCarb").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1},
-    {val:p, target:currentTargets.p, label:t("labelProtein").replace(/ ?\(.*\)/,""), unit:` ${t("unitG")}`, dec:1},
+    {val:kcal, target:currentTargets.kcal, label:t("labelKcal").replace(/ ?\(.*\)/,""), unit:"", dec:0},
   ];
   if(currentUser && currentUser.originalWeight!=null && currentUser.targetWeightVal!=null && currentUser.currentWeightVal!=null && currentUser.originalWeight !== currentUser.targetWeightVal){
     const denom = currentUser.originalWeight - currentUser.targetWeightVal;
     const journeyPct = ((currentUser.originalWeight - currentUser.currentWeightVal)/denom)*100;
-    cards.push({special:"weightJourney", pct: journeyPct});
+    cards.push({special:"weightJourney", pct: journeyPct, targetWeight: currentUser.targetWeightVal});
   }
   if(currentUser && currentUser.activities){
     const acts = currentUser.activities;
@@ -2850,6 +2898,56 @@ document.getElementById("nextDay").addEventListener("click", ()=>{
   document.getElementById("dateInput").value = s;
   loadDate(s);
 });
+
+function showToast(html, accentColor){
+  const existing = document.getElementById("appToast");
+  if(existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "appToast";
+  toast.style.cssText = `
+    position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-20px);
+    background:#fff; border-radius:var(--radius-md); box-shadow:0 6px 20px rgba(0,0,0,.18);
+    border-right:5px solid ${accentColor || 'var(--brand)'}; padding:14px 18px; max-width:340px;
+    z-index:9999; opacity:0; transition:opacity .3s ease, transform .3s ease; text-align:center;
+  `;
+  toast.innerHTML = html;
+  document.body.appendChild(toast);
+  requestAnimationFrame(()=>{
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(-50%) translateY(0)";
+  });
+  setTimeout(()=>{
+    toast.style.opacity = "0";
+    toast.style.transform = "translateX(-50%) translateY(-20px)";
+    setTimeout(()=> toast.remove(), 350);
+  }, 4500);
+}
+
+function weightChangeToast(prevWeight, newWeight){
+  if(prevWeight == null){
+    showToast(`<div style="font-size:1.3rem;">🌱</div><div style="font-weight:700;color:var(--dark);margin-top:4px;">המדידה הראשונה שלך נשמרה!</div><div style="font-size:.85rem;color:var(--muted);margin-top:2px;">זו נקודת ההתחלה למסע שלך.</div>`, "var(--brand)");
+    return;
+  }
+  const diff = Math.round((newWeight - prevWeight) * 10) / 10;
+  const absDiff = Math.abs(diff);
+  const goal = (currentUser && currentUser.goal) || "lose";
+  // "progress" = movement in the direction that matches the user's stated goal
+  const isProgress = goal === "gain" ? diff > 0 : diff < 0;
+  const isOffDirection = goal === "gain" ? diff < 0 : diff > 0;
+  const verb = goal === "gain" ? "עלית" : "ירדת";
+  const offVerb = goal === "gain" ? "ירדת" : "עלית";
+  const lines = { he: [], color: "var(--brand)" };
+  if(isProgress){
+    if(absDiff >= 1.5){ lines.he = ["🚀", `${verb} ${absDiff} ק"ג מהמדידה הקודמת!`, "התקדמות מרשימה — כל הכבוד!"]; lines.color = "#2e7d4f"; }
+    else if(absDiff >= 0.5){ lines.he = ["🔥", `${verb} ${absDiff} ק"ג מהמדידה הקודמת`, "המשך כך, אתה בכיוון הנכון!"]; lines.color = "#2e7d4f"; }
+    else{ lines.he = ["🎉", `${verb} ${absDiff} ק"ג`, "כל צעד קטן נספר 💪"]; lines.color = "#2e7d4f"; }
+  }else if(diff === 0){
+    lines.he = ["⚖️", "המשקל יציב מהמדידה הקודמת", "לפעמים גם יציבות היא הישג."]; lines.color = "#3d7ab8";
+  }else if(isOffDirection){
+    lines.he = ["📈", `${offVerb} ${absDiff} ק"ג מהמדידה הקודמת`, "זה קורה לכולם — ממשיכים להתמיד 💪"]; lines.color = "#d4a017";
+  }
+  showToast(`<div style="font-size:1.3rem;">${lines.he[0]}</div><div style="font-weight:700;color:var(--dark);margin-top:4px;">${lines.he[1]}</div><div style="font-size:.85rem;color:var(--muted);margin-top:2px;">${lines.he[2]}</div>`, lines.color);
+}
 
 async function saveDayData(){
   const status = document.getElementById("saveStatus");
