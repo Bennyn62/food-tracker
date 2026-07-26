@@ -1637,7 +1637,7 @@ async function showAdminUserPanel(code, label, userData){
 
     <div id="subpanel-history-${code}" style="display:none;">
       <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <span style="font-size:.75rem;color:var(--muted);">🔴 חריגה משמעותית מהיעד &nbsp; 🟡 מתחת ליעד באופן משמעותי</span>
+        <span style="font-size:.75rem;color:var(--muted);">🔵 עד 70% &nbsp; 🟡 עד 80% &nbsp; 🟢 עד 100% &nbsp; 🔴 מעל 100%</span>
         <button class="addrow" id="exportCsvBtn-${code}">${icon("download",14)} ייצוא CSV (מזון) למשתמש זה</button>
       </div>
       <table><thead><tr id="adminHistHead"><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>שומן</th><th>פחמימה</th></tr></thead><tbody id="adminHistBody"><tr><td colspan="5">טוען...</td></tr></tbody></table>
@@ -1808,11 +1808,11 @@ async function showAdminUserPanel(code, label, userData){
     }
     body.innerHTML = dates.map(d=>{
       const t = dayTotals(log[d]);
-      const overBy = t.kcal - personalTargets.kcal;
       let rowStyle = "";
       if(personalTargets.kcal > 0){
-        if(overBy > personalTargets.kcal*0.15) rowStyle = 'style="background:#fdeeea;"';
-        else if(overBy < -personalTargets.kcal*0.3) rowStyle = 'style="background:#fdf6e3;"';
+        const kcalPct = Math.round((t.kcal / personalTargets.kcal) * 100);
+        const color = pctColor(kcalPct);
+        if(color) rowStyle = `style="background:${color}22;"`;
       }
       const act = (log[d] && log[d].activities) || {};
       const sleepData = (log[d] && log[d].sleep) || {};
