@@ -26,33 +26,57 @@
   .sub{text-align:center;color:var(--muted);font-size:.95rem;margin-bottom:12px;}
 
   #connDiag{
-    text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:10px;
-    background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);padding:6px 10px;
+    position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:9999;
+    text-align:center;font-size:.78rem;color:var(--muted);
+    background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);padding:6px 12px;
+    max-width:90%;
   }
   #connDiag.ok{color:var(--teal);}
   #connDiag.bad{color:#b04a4a;background:#fdf0f0;}
 
-  #loginGate{max-width:380px;margin:40px auto;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:28px 24px;text-align:center;}
-  #loginGate h2{color:var(--dark);margin-top:0;}
+  #loginGate{
+    position:fixed; inset:0; background:#12181a; z-index:9998;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px 20px; overflow-y:auto;
+  }
   .eway-logo{
     text-align:center;font-family:'Playfair Display', Georgia, serif;
-    font-size:3.4rem;font-weight:800;letter-spacing:0;
-    margin-bottom:8px;line-height:1;direction:ltr;
+    font-size:2rem;font-weight:800;letter-spacing:0;line-height:1;direction:ltr;
+    background:#1c2427; border:1px solid #2a3438; border-radius:24px;
+    width:104px; height:104px; display:flex; align-items:center; justify-content:center;
+    margin-bottom:18px;
   }
-  .eway-e{
-    font-style:italic;font-weight:500;color:#a8503f;
-  }
-  .eway-way{
-    color:#1a1a1a;font-weight:800;
-  }
+  .eway-e{ font-style:italic;font-weight:500;color:#c96a52; }
+  .eway-way{ color:#f2f4f3;font-weight:800; }
   .eway-tagline{
-    text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:18px;letter-spacing:.2px;
+    text-align:center;color:#8a9a96;font-size:.82rem;margin-bottom:26px;letter-spacing:.2px;
   }
-  #loginGate input{width:100%;padding:12px;font-size:1.1rem;text-align:center;border:1px solid #c9d6d1;border-radius:var(--radius-sm);margin:14px 0;font-family:inherit;letter-spacing:1px;}
-  #loginGate button{width:100%;padding:12px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:1rem;cursor:pointer;}
-  #loginGate button:hover{background:var(--teal);}
-  #loginMsg{color:#b04a4a;font-size:.85rem;min-height:1.2em;margin-top:8px;}
-  #loginGate .hint{font-size:.78rem;color:var(--muted);margin-top:14px;}
+  #loginGate .pin-title{ color:#f2f4f3; font-size:1.35rem; font-weight:700; margin-bottom:6px; }
+  #pinDots{ display:flex; gap:16px; justify-content:center; margin-bottom:34px; min-height:14px; }
+  .pin-dot{
+    width:14px; height:14px; border-radius:50%; background:#2a3438;
+    transition:background .15s, transform .15s;
+  }
+  .pin-dot.filled{ background:#e8eceb; transform:scale(1.06); }
+  #pinPad{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:18px;
+    max-width:290px; width:100%; margin:0 auto;
+  }
+  .pin-key{
+    aspect-ratio:1; border-radius:50%; background:#1a2225; border:1px solid #2a3438;
+    color:#f2f4f3; font-size:1.6rem; font-weight:600; font-family:inherit;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background .12s, transform .08s; user-select:none;
+  }
+  .pin-key:active{ background:#263135; transform:scale(.94); }
+  .pin-key.pin-action{
+    background:none; border:none; font-size:.9rem; font-weight:600; color:#8a9a96;
+  }
+  .pin-key.pin-action:active{ background:none; color:#f2f4f3; }
+  .pin-key.pin-enter{ background:var(--brand); border-color:var(--brand); color:#fff; font-size:.95rem; font-weight:700; }
+  #loginMsg{color:#e07a7a;font-size:.85rem;min-height:1.2em;margin-top:16px;text-align:center;}
+  #loginGate .hint{font-size:.78rem;color:#8a9a96;margin-top:18px;text-align:center;}
+  #loginGate .hint a{color:#c96a52;}
 
   #appArea{display:none;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
@@ -198,12 +222,29 @@
     <div class="eway-logo">
       <span class="eway-e">e</span><span class="eway-way">Way</span>
     </div>
-    <div class="eway-tagline">Eat way younger you.</div>
-    <div class="sub" style="margin-bottom:0;">הזן את הקוד האישי שקיבלת כדי להיכנס</div>
-    <input type="text" id="codeInput" placeholder="הקוד שלך" autocomplete="off" inputmode="numeric">
-    <button id="loginBtn">כניסה</button>
+    <div class="pin-title">eWay</div>
+    <div class="eway-tagline">הזינו את קוד הכניסה</div>
+
+    <input type="hidden" id="codeInput">
+    <div id="pinDots"></div>
+
+    <div id="pinPad">
+      <button class="pin-key" data-digit="1">1</button>
+      <button class="pin-key" data-digit="2">2</button>
+      <button class="pin-key" data-digit="3">3</button>
+      <button class="pin-key" data-digit="4">4</button>
+      <button class="pin-key" data-digit="5">5</button>
+      <button class="pin-key" data-digit="6">6</button>
+      <button class="pin-key" data-digit="7">7</button>
+      <button class="pin-key" data-digit="8">8</button>
+      <button class="pin-key" data-digit="9">9</button>
+      <button class="pin-key pin-action" id="pinDelete">מחיקה</button>
+      <button class="pin-key" data-digit="0">0</button>
+      <div></div>
+    </div>
+
     <div id="loginMsg"></div>
-    <div class="hint">אין לך קוד? פנה למנהל <a href="tel:0547738662" style="color:var(--teal);font-weight:700;text-decoration:none;">eWay</a>.</div>
+    <div class="hint">אין לך קוד? פנה למנהל <a href="tel:0547738662" style="font-weight:700;text-decoration:none;">eWay</a>.</div>
   </div>
 
   <div id="appArea">
@@ -289,7 +330,7 @@
           <h2><span>הוספת משתמש חדש</span></h2>
           <div class="adduser-grid">
             <input type="text" id="newUserName" placeholder="שם המשתמש">
-            <input type="text" id="newUserCode" placeholder="קוד ייחודי (או השאר ריק ליצירה אוטומטית)">
+            <input type="text" id="newUserCode" placeholder="קוד בן 4 ספרות (או ריק ליצירה אוטומטית)" inputmode="numeric" maxlength="4">
             <select id="newUserGender">
               <option value="male">זכר</option>
               <option value="female">נקבה</option>
@@ -841,8 +882,55 @@ async function fbUpdateFood(id, data){
 }
 
 // ---------------- Login ----------------
-document.getElementById("loginBtn").addEventListener("click", doLogin);
-document.getElementById("codeInput").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+const PIN_LENGTH = 4;
+
+function renderPinDots(){
+  const val = document.getElementById("codeInput").value;
+  const dotsEl = document.getElementById("pinDots");
+  let html = "";
+  for(let i=0;i<PIN_LENGTH;i++){
+    html += `<div class="pin-dot${i < val.length ? ' filled' : ''}"></div>`;
+  }
+  dotsEl.innerHTML = html;
+}
+
+function pinAddDigit(digit){
+  const input = document.getElementById("codeInput");
+  if(input.value.length >= PIN_LENGTH) return;
+  input.value += digit;
+  document.getElementById("loginMsg").textContent = "";
+  renderPinDots();
+  if(input.value.length === PIN_LENGTH){
+    // brief pause so the last dot visibly fills before we attempt login
+    setTimeout(doLogin, 180);
+  }
+}
+
+function pinDeleteDigit(){
+  const input = document.getElementById("codeInput");
+  input.value = input.value.slice(0, -1);
+  document.getElementById("loginMsg").textContent = "";
+  renderPinDots();
+}
+
+document.querySelectorAll("#pinPad .pin-key[data-digit]").forEach(btn=>{
+  btn.addEventListener("click", ()=> pinAddDigit(btn.dataset.digit));
+});
+
+document.getElementById("pinDelete").addEventListener("click", pinDeleteDigit);
+
+// physical keyboard support (desktop)
+document.addEventListener("keydown", (e)=>{
+  const gate = document.getElementById("loginGate");
+  if(!gate || gate.style.display === "none") return;
+  if(/^[0-9]$/.test(e.key)){
+    pinAddDigit(e.key);
+  }else if(e.key === "Backspace"){
+    pinDeleteDigit();
+  }
+});
+
+renderPinDots();
 
 async function doLogin(){
   const code = document.getElementById("codeInput").value.trim();
@@ -859,6 +947,7 @@ async function doLogin(){
       if(found.blocked){
         msg.style.color = "#b04a4a";
         msg.textContent = "המשתמש חסום. פנה למנהל.";
+        document.getElementById("codeInput").value = ""; renderPinDots();
         return;
       }
       currentUser = {code:found.code, name:found.name, isAdmin:false, canAdmin:!!found.isAdmin, gender:found.gender, height:found.height, weight:found.weight, age:found.age, language:found.language||"he", goal:found.goal||"lose", activities:found.activities||{}, stepsTarget:found.stepsTarget, runningTarget:found.runningTarget, strengthWeeklyTarget:found.strengthWeeklyTarget, sleepTarget:found.sleepTarget, trackSugar:found.trackSugar};
@@ -874,6 +963,7 @@ async function doLogin(){
     }
     msg.style.color = "#b04a4a";
     msg.textContent = "קוד לא מזוהה. בדוק שוב או פנה למנהל.";
+    document.getElementById("codeInput").value = ""; renderPinDots();
   }catch(e){
     msg.style.color = "#b04a4a";
     msg.textContent = "שגיאת התחברות: " + (e && e.message ? e.message : String(e));
@@ -884,9 +974,10 @@ document.getElementById("logoutBtn").addEventListener("click", ()=>{
   currentUser = null;
   if(heartbeatInterval){ clearInterval(heartbeatInterval); heartbeatInterval = null; }
   document.getElementById("appArea").style.display = "none";
-  document.getElementById("loginGate").style.display = "block";
+  document.getElementById("loginGate").style.display = "flex";
   document.getElementById("codeInput").value = "";
   document.getElementById("loginMsg").textContent = "";
+  renderPinDots();
 });
 
 async function enterAdminMode(){
@@ -1096,11 +1187,23 @@ document.getElementById("addUserBtn").addEventListener("click", async ()=>{
   const goal = document.getElementById("newUserGoal").value;
   const msg = document.getElementById("addUserMsg");
   if(!name){ msg.style.color="#b04a4a"; msg.textContent="הזן שם למשתמש."; return; }
-  if(!code){ code = "U" + Math.random().toString(36).slice(2,8).toUpperCase(); }
+  if(code && !/^\d{4}$/.test(code)){
+    msg.style.color="#b04a4a"; msg.textContent="הקוד חייב להיות בדיוק 4 ספרות.";
+    return;
+  }
   msg.style.color = "var(--muted)";
   msg.textContent = "שומר...";
   try{
     const users = await fbGetUsers();
+    if(!code){
+      // pick a random unused 4-digit code
+      const taken = new Set(users.map(u=>u.code));
+      for(let i=0;i<500 && !code;i++){
+        const candidate = String(Math.floor(1000 + Math.random()*9000));
+        if(!taken.has(candidate)) code = candidate;
+      }
+      if(!code){ msg.style.color="#b04a4a"; msg.textContent="לא נמצא קוד פנוי, הזן קוד ידנית."; return; }
+    }
     if(users.find(u=>u.code === code)){
       msg.style.color="#b04a4a"; msg.textContent="הקוד הזה כבר קיים, בחר קוד אחר."; return;
     }
@@ -1553,7 +1656,7 @@ async function showAdminUserPanel(code, label, userData){
         </div>
         <div class="activity-toggle-row">
           <span style="font-size:.85rem;color:var(--muted);font-weight:600;">שינוי קוד:</span>
-          <input type="text" id="editNewCode-${code}" placeholder="קוד חדש">
+          <input type="text" id="editNewCode-${code}" placeholder="קוד חדש (4 ספרות)" inputmode="numeric" maxlength="4">
           <button class="addrow" id="changeCodeBtn-${code}" style="border-color:#c77b2b;color:#c77b2b;">שנה קוד</button>
           <span id="changeCodeMsg-${code}" style="font-size:.8rem;"></span>
         </div>
@@ -1704,6 +1807,7 @@ async function showAdminUserPanel(code, label, userData){
     const newCode = document.getElementById(`editNewCode-${code}`).value.trim();
     const ccMsg = document.getElementById(`changeCodeMsg-${code}`);
     if(!newCode){ ccMsg.style.color="#b04a4a"; ccMsg.textContent="הזן קוד חדש."; return; }
+    if(!/^\d{4}$/.test(newCode)){ ccMsg.style.color="#b04a4a"; ccMsg.textContent="הקוד חייב להיות בדיוק 4 ספרות."; return; }
     if(newCode === code){ ccMsg.style.color="#b04a4a"; ccMsg.textContent="זה כבר הקוד הנוכחי."; return; }
     ccMsg.style.color = "var(--muted)"; ccMsg.textContent = "מעביר נתונים...";
     try{
