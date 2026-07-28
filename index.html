@@ -18,9 +18,23 @@
     --breakfast:#2e7d4f; --lunch:#c96a1f; --dinner:#2a5f9e; --extra:#6a5296;
     --radius-sm:8px; --radius-md:10px; --radius-pill:20px;
     --shadow-sm:0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+    /* surfaces — flipped in the dark-mode block below */
+    --bg:#f3f6f4; --surface:#fff; --surface-2:#fafcfa;
+    --input-bg:#fff; --input-border:#c9d6d1; --bar-track:#dde8e3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --dark:#e8eceb;           /* used as heading/emphasis text colour */
+      --teal:#4a9d8a; --brand:#3fae77; --accent:#d8913f;
+      --lightbg:#1f292c; --rowbg:#1a2225; --grid:#2c383c;
+      --text:#e8eceb; --muted:#93a3a0;
+      --bg:#12181a; --surface:#1a2225; --surface-2:#161d20;
+      --input-bg:#141b1e; --input-border:#33403f; --bar-track:#2c383c;
+      --shadow-sm:0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+    }
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;background:#f3f6f4;color:var(--text);padding:24px 16px 60px;}
+  body{margin:0;font-family:'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;background:var(--bg);color:var(--text);padding:24px 16px 60px;}
   .wrap{max-width:1100px;margin:0 auto;}
   h1{text-align:center;color:var(--dark);font-size:1.7rem;margin:0 0 4px;}
   .sub{text-align:center;color:var(--muted);font-size:.95rem;margin-bottom:12px;}
@@ -28,55 +42,73 @@
   #connDiag{
     position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:9999;
     text-align:center;font-size:.78rem;color:var(--muted);
-    background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);padding:6px 12px;
+    background:var(--surface-2);border:1px solid var(--grid);border-radius:var(--radius-sm);padding:6px 12px;
     max-width:90%;
   }
   #connDiag.ok{color:var(--teal);}
-  #connDiag.bad{color:#b04a4a;background:#fdf0f0;}
+  #connDiag.bad{color:#e07a7a;background:var(--surface-2);border-color:#e07a7a;}
+
+  /* Login screen theme — follows the device's system setting.
+     Defaults below are the dark palette; the light override is further down. */
+  :root{
+    --pin-bg:#12181a; --pin-tile:#1c2427; --pin-border:#2a3438;
+    --pin-text:#f2f4f3; --pin-muted:#8a9a96;
+    --pin-dot:#2a3438; --pin-dot-filled:#e8eceb;
+    --pin-key-bg:#1a2225; --pin-key-active:#263135;
+    --pin-accent:#c96a52;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --pin-bg:#f4f6f5; --pin-tile:#ffffff; --pin-border:#dbe4e1;
+      --pin-text:#1a2225; --pin-muted:#687975;
+      --pin-dot:#d3dcd9; --pin-dot-filled:#1a2225;
+      --pin-key-bg:#ffffff; --pin-key-active:#e6ecea;
+      --pin-accent:#a8503f;
+    }
+  }
 
   #loginGate{
-    position:fixed; inset:0; background:#12181a; z-index:9998;
+    position:fixed; inset:0; background:var(--pin-bg); z-index:9998;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:24px 20px; overflow-y:auto;
   }
   .eway-logo{
     text-align:center;font-family:'Playfair Display', Georgia, serif;
     font-size:2rem;font-weight:800;letter-spacing:0;line-height:1;direction:ltr;
-    background:#1c2427; border:1px solid #2a3438; border-radius:24px;
+    background:var(--pin-tile); border:1px solid var(--pin-border); border-radius:24px;
     width:104px; height:104px; display:flex; align-items:center; justify-content:center;
     margin-bottom:18px;
   }
-  .eway-e{ font-style:italic;font-weight:500;color:#c96a52; }
-  .eway-way{ color:#f2f4f3;font-weight:800; }
+  .eway-e{ font-style:italic;font-weight:500;color:var(--pin-accent); }
+  .eway-way{ color:var(--pin-text);font-weight:800; }
   .eway-tagline{
-    text-align:center;color:#8a9a96;font-size:.82rem;margin-bottom:26px;letter-spacing:.2px;
+    text-align:center;color:var(--pin-muted);font-size:.82rem;margin-bottom:26px;letter-spacing:.2px;
   }
-  #loginGate .pin-title{ color:#f2f4f3; font-size:1.35rem; font-weight:700; margin-bottom:6px; }
+  #loginGate .pin-title{ color:var(--pin-text); font-size:1.35rem; font-weight:700; margin-bottom:6px; }
   #pinDots{ display:flex; gap:16px; justify-content:center; margin-bottom:34px; min-height:14px; }
   .pin-dot{
-    width:14px; height:14px; border-radius:50%; background:#2a3438;
+    width:14px; height:14px; border-radius:50%; background:var(--pin-dot);
     transition:background .15s, transform .15s;
   }
-  .pin-dot.filled{ background:#e8eceb; transform:scale(1.06); }
+  .pin-dot.filled{ background:var(--pin-dot-filled); transform:scale(1.06); }
   #pinPad{
     display:grid; grid-template-columns:repeat(3, 1fr); gap:18px;
     max-width:290px; width:100%; margin:0 auto;
   }
   .pin-key{
-    aspect-ratio:1; border-radius:50%; background:#1a2225; border:1px solid #2a3438;
-    color:#f2f4f3; font-size:1.6rem; font-weight:600; font-family:inherit;
+    aspect-ratio:1; border-radius:50%; background:var(--pin-key-bg); border:1px solid var(--pin-border);
+    color:var(--pin-text); font-size:1.6rem; font-weight:600; font-family:inherit;
     cursor:pointer; display:flex; align-items:center; justify-content:center;
     transition:background .12s, transform .08s; user-select:none;
   }
-  .pin-key:active{ background:#263135; transform:scale(.94); }
+  .pin-key:active{ background:var(--pin-key-active); transform:scale(.94); }
   .pin-key.pin-action{
-    background:none; border:none; font-size:.9rem; font-weight:600; color:#8a9a96;
+    background:none; border:none; font-size:.9rem; font-weight:600; color:var(--pin-muted);
   }
-  .pin-key.pin-action:active{ background:none; color:#f2f4f3; }
-  .pin-key.pin-enter{ background:var(--brand); border-color:var(--brand); color:#fff; font-size:.95rem; font-weight:700; }
+  .pin-key.pin-action:active{ background:none; color:var(--pin-text); }
   #loginMsg{color:#e07a7a;font-size:.85rem;min-height:1.2em;margin-top:16px;text-align:center;}
-  #loginGate .hint{font-size:.78rem;color:#8a9a96;margin-top:18px;text-align:center;}
-  #loginGate .hint a{color:#c96a52;}
+  #loginGate .hint{font-size:.78rem;color:var(--pin-muted);margin-top:18px;text-align:center;}
+  #loginGate .hint a{color:var(--pin-accent);}
 
   #appArea{display:none;}
   .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
@@ -98,11 +130,11 @@
     text-align:center;width:100%;padding:6px 0;
   }
   .control-date input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);}
-  .datebar input[type=date]{padding:8px 10px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;font-size:.95rem;}
+  .datebar input[type=date]{padding:8px 10px;border:1px solid var(--input-border);border-radius:var(--radius-sm);font-family:inherit;font-size:.95rem;}
   .datebar button{padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:.9rem;}
   .btn-save{background:var(--brand);color:#fff;}
   .btn-save:hover{background:var(--teal);}
-  .btn-nav{background:#fff;border:1px solid var(--grid) !important;color:var(--dark);}
+  .btn-nav{background:var(--surface);border:1px solid var(--grid) !important;color:var(--dark);}
   #saveStatus{font-size:.8rem;color:var(--teal);min-width:120px;}
 
   .badges{display:flex;background:var(--brand);border-radius:var(--radius-md);overflow:hidden;margin-bottom:26px;}
@@ -111,7 +143,7 @@
   .badge .num{font-size:1.15rem;font-weight:700;}
   .badge .lbl{font-size:.75rem;color:#cfe0da;margin-top:2px;}
 
-  section{background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);margin-bottom:18px;overflow:hidden;}
+  section{background:var(--surface);box-shadow:var(--shadow-sm);border-radius:var(--radius-md);margin-bottom:18px;overflow:hidden;}
   section h2{color:#fff;margin:0;padding:10px 16px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;background:var(--brand);}
   section h2 .meal-total{font-size:.85rem;font-weight:400;color:#dff0ea;}
 
@@ -120,7 +152,7 @@
   tbody td{padding:6px;border-bottom:1px solid var(--grid);text-align:center;vertical-align:middle;}
   tbody tr:nth-child(even){background:var(--rowbg);}
 
-  select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);}
+  select, input[type=number], input[type=text]{width:100%;padding:6px 4px;border:1px solid var(--input-border);border-radius:var(--radius-sm);font-size:.85rem;font-family:inherit;background:var(--input-bg);color:var(--text);}
   /* iOS Safari auto-zooms on focus when font-size < 16px; bump it only while focused so layout stays compact otherwise */
   input:focus, select:focus, textarea:focus{font-size:16px;}
   input[type=number]{text-align:center;}
@@ -131,20 +163,20 @@
   button.addrow:hover{background:var(--lightbg);}
   button.delrow{background:none;border:none;color:#b04a4a;cursor:pointer;font-size:1rem;line-height:1;}
 
-  .daily-total{background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:18px 16px;margin-top:10px;}
+  .daily-total{background:var(--surface);box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:18px 16px;margin-top:10px;}
   .daily-total h2{margin:0 0 14px;font-size:1.05rem;color:var(--dark);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .dt-grid{display:flex;gap:10px;flex-wrap:wrap;}
   .dt-card{flex:1;min-width:130px;background:var(--lightbg);border-radius:var(--radius-sm);padding:11px 12px;}
   .dt-card .num{font-size:1.2rem;font-weight:700;color:var(--dark);}
   .dt-card .lbl{font-size:.72rem;color:var(--muted);font-weight:600;margin-bottom:4px;}
-  .dt-card .bar{height:6px;background:#dde8e3;border-radius:4px;margin-top:8px;overflow:hidden;}
+  .dt-card .bar{height:6px;background:var(--bar-track);border-radius:4px;margin-top:8px;overflow:hidden;}
   .dt-card .bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .2s;}
   .dt-card .delta{font-size:.75rem;margin-top:5px;font-weight:600;}
 
   .note{text-align:center;color:var(--muted);font-size:.8rem;margin-top:20px;}
   .addfood-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;}
   .af-field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px;}
-  .af-field input{width:100%;padding:7px 8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;font-size:.88rem;}
+  .af-field input{width:100%;padding:7px 8px;border:1px solid var(--input-border);border-radius:var(--radius-sm);font-family:inherit;font-size:.88rem;}
 
   .tab-bar{
     display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;
@@ -167,9 +199,9 @@
   #historyBody tr:hover{background:var(--lightbg) !important;}
 
   .stat-grid{display:flex;gap:10px;flex-wrap:wrap;}
-  .stat-cell{min-width:100px;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:10px 14px;text-align:center;}
+  .stat-cell{min-width:100px;background:var(--surface);box-shadow:var(--shadow-sm);border-radius:var(--radius-md);padding:10px 14px;text-align:center;}
   .stat-row-compact{display:flex;flex-wrap:nowrap;gap:5px;margin-bottom:10px;}
-  .stat-cell-sm{flex:1;min-width:0;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:6px 3px;text-align:center;overflow:hidden;}
+  .stat-cell-sm{flex:1;min-width:0;background:var(--surface);box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:6px 3px;text-align:center;overflow:hidden;}
   .stat-cell-sm .stat-label{font-size:.6rem;color:var(--muted);margin-bottom:3px;font-weight:600;white-space:nowrap;}
   .stat-cell-sm .stat-value{font-size:.78rem;font-weight:700;color:var(--dark);white-space:nowrap;}
   .stat-label{font-size:.72rem;color:var(--muted);margin-bottom:4px;font-weight:600;}
@@ -181,26 +213,26 @@
   .period-table td{font-size:.92rem;font-weight:700;color:var(--dark);padding:6px;text-align:center;border-top:1px solid var(--grid);white-space:nowrap;}
   .period-table td.stat-period-label{font-size:.8rem;font-weight:600;color:var(--muted);text-align:right;white-space:nowrap;}
   .admin-users{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;}
-  .admin-user-chip{padding:8px 14px;box-shadow:var(--shadow-sm);border:2px solid transparent;border-radius:var(--radius-pill);cursor:pointer;font-size:.85rem;background:#fff;transition:border-color .15s;}
+  .admin-user-chip{padding:8px 14px;box-shadow:var(--shadow-sm);border:2px solid transparent;border-radius:var(--radius-pill);cursor:pointer;font-size:.85rem;background:var(--surface);transition:border-color .15s;}
   .admin-user-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);}
   .adduser-grid{display:grid;grid-template-columns:1.1fr 1fr .6fr .55fr .55fr .65fr .45fr .6fr;gap:8px;padding:0 16px 16px;}
-  .adduser-grid input{padding:8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;}
+  .adduser-grid input{padding:8px;border:1px solid var(--input-border);border-radius:var(--radius-sm);font-family:inherit;}
   .adduser-grid button{background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;cursor:pointer;}
   .activity-toggle-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:.85rem;}
   .activity-group-col{
     flex:1;min-width:130px;display:flex;flex-direction:column;gap:8px;
-    background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:10px 12px;
+    background:var(--surface);box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:10px 12px;
   }
   .activity-group-col label{font-size:.85rem;color:var(--text);display:flex;align-items:center;gap:6px;font-weight:600;}
   .activity-group-col input[type=number]{width:100%;}
   .setting-group{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 14px;}
-  .setting-card{flex:1;min-width:105px;background:#fff;box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:9px 8px;text-align:center;}
+  .setting-card{flex:1;min-width:105px;background:var(--surface);box-shadow:var(--shadow-sm);border-radius:var(--radius-sm);padding:9px 8px;text-align:center;}
   .setting-card label{display:flex;align-items:center;justify-content:center;gap:4px;font-size:.78rem;font-weight:600;color:var(--dark);margin-bottom:6px;cursor:pointer;white-space:nowrap;}
   .setting-card label input[type=checkbox]{width:auto;margin:0;}
   .setting-card input[type=number]{width:100%;font-size:.78rem;padding:5px 4px;text-align:center;}
   .setting-card .setting-name{font-size:.78rem;font-weight:600;color:var(--dark);margin-bottom:6px;}
   .activity-toggle-row label{display:flex;align-items:center;gap:4px;cursor:pointer;}
-  .activity-toggle-row input[type=number]{padding:6px 8px;border:1px solid #c9d6d1;border-radius:var(--radius-sm);font-family:inherit;}
+  .activity-toggle-row input[type=number]{padding:6px 8px;border:1px solid var(--input-border);border-radius:var(--radius-sm);font-family:inherit;}
   @media (max-width:700px){
     .adduser-grid{grid-template-columns:1fr 1fr;}
   }
@@ -252,9 +284,9 @@
     <div class="topbar">
       <div class="who" id="whoLabel"></div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button id="backToUserBtn" style="display:none;border:1px solid var(--grid);background:#fff;color:var(--dark);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;">🔙 חזרה לתצוגה שלי</button>
+        <button id="backToUserBtn" style="display:none;border:1px solid var(--grid);background:var(--surface);color:var(--dark);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;">🔙 חזרה לתצוגה שלי</button>
         <span id="adminUnlockBtnWrap" style="display:none;">
-          <button id="adminUnlockBtn" style="border:1px solid var(--grid);background:#fff;color:var(--muted);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;">🔐 מסך ניהול</button>
+          <button id="adminUnlockBtn" style="border:1px solid var(--grid);background:var(--surface);color:var(--muted);padding:6px 14px;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;">🔐 מסך ניהול</button>
         </span>
         <button id="logoutBtn">התנתקות</button>
       </div>
@@ -408,7 +440,7 @@
         <button class="tab-btn" data-tab="dinner" style="--tabColor:var(--dinner);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 12 12.79z"/></svg> <span>ערב</span></button>
         <button class="tab-btn" data-tab="extra" style="--tabColor:var(--extra);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1" fill="currentColor" stroke="none"/></svg> <span>חטיף</span></button>
         <button class="tab-btn" data-tab="activity" style="--tabColor:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><rect x="1.5" y="9" width="3" height="6" rx="1"/><rect x="19.5" y="9" width="3" height="6" rx="1"/><rect x="5.5" y="7" width="2" height="10" rx="1"/><rect x="16.5" y="7" width="2" height="10" rx="1"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg> <span>אימון</span></button>
-        <button class="tab-btn" data-tab="summary" style="--tabColor:var(--dark);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> <span>סיכום</span></button>
+        <button class="tab-btn" data-tab="summary" style="--tabColor:#1a3c34;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> <span>סיכום</span></button>
       </div>
 
       <div class="sub" id="instructionText" style="font-size:.85rem;color:var(--accent);font-weight:600;">
@@ -421,7 +453,7 @@
 
       <div id="summarySection" style="display:none;">
         <div class="tab-bar" id="summarySubTabBar" style="margin-bottom:14px;">
-          <button class="tab-btn summarysubtab-btn active" data-summarysubtab="week" style="--tabColor:var(--dark);">שבועי</button>
+          <button class="tab-btn summarysubtab-btn active" data-summarysubtab="week" style="--tabColor:#1a3c34;">שבועי</button>
           <button class="tab-btn summarysubtab-btn" data-summarysubtab="month" style="--tabColor:#8a3a52;">חודשי</button>
           <button class="tab-btn summarysubtab-btn" data-summarysubtab="year" style="--tabColor:#3d5a7a;">שנתי</button>
         </div>
@@ -1317,17 +1349,17 @@ function buildWeightChartSVG(entries, target){
     targetLine = `<line x1="${padL}" y1="${ty}" x2="${w-padR}" y2="${ty}" stroke="#c77b2b" stroke-width="1.5" stroke-dasharray="5,4"/>
       <text x="${w-padR}" y="${ty-4}" font-size="10" fill="#c77b2b" text-anchor="end">יעד ${target.target}</text>`;
   }
-  const dots = asc.map((e,i)=> `<circle cx="${xFor(i)}" cy="${yFor(e.weight)}" r="3" fill="#2f6b5e"/>`).join("");
-  const firstLabel = `<text x="${padL}" y="${h-4}" font-size="9" fill="#5b6b66">${asc[0].date.slice(5)}</text>`;
-  const lastLabel = asc.length>1 ? `<text x="${w-padR}" y="${h-4}" font-size="9" fill="#5b6b66" text-anchor="end">${asc[asc.length-1].date.slice(5)}</text>` : "";
+  const dots = asc.map((e,i)=> `<circle cx="${xFor(i)}" cy="${yFor(e.weight)}" r="3" style="fill:var(--brand);"/>`).join("");
+  const firstLabel = `<text x="${padL}" y="${h-4}" font-size="9" style="fill:var(--muted);">${asc[0].date.slice(5)}</text>`;
+  const lastLabel = asc.length>1 ? `<text x="${w-padR}" y="${h-4}" font-size="9" style="fill:var(--muted);" text-anchor="end">${asc[asc.length-1].date.slice(5)}</text>` : "";
   const legend = `<g font-size="9">
-    <line x1="${w-140}" y1="8" x2="${w-124}" y2="8" stroke="#2f6b5e" stroke-width="2"/><text x="${w-120}" y="11" fill="#2f6b5e">נמדד</text>
+    <line x1="${w-140}" y1="8" x2="${w-124}" y2="8" style="stroke:var(--brand);" stroke-width="2"/><text x="${w-120}" y="11" style="fill:var(--brand);">נמדד</text>
     <line x1="${w-70}" y1="8" x2="${w-54}" y2="8" stroke="#8a3a52" stroke-width="2" stroke-dasharray="4,3"/><text x="${w-50}" y="11" fill="#8a3a52">צפוי</text>
   </g>`;
-  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;background:#fafcfa;border:1px solid var(--grid);border-radius:var(--radius-sm);">
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:140px;background:var(--surface-2);border:1px solid var(--grid);border-radius:var(--radius-sm);">
     ${targetLine}
     <polyline points="${expectedPoints}" fill="none" stroke="#8a3a52" stroke-width="1.5" stroke-dasharray="4,3"/>
-    <polyline points="${points}" fill="none" stroke="#2f6b5e" stroke-width="2"/>
+    <polyline points="${points}" fill="none" style="stroke:var(--brand);" stroke-width="2"/>
     ${dots}
     ${legend}
     ${firstLabel}${lastLabel}
@@ -1606,7 +1638,7 @@ async function showAdminUserPanel(code, label, userData){
   }
 
   const statsHtml = `
-    <div style="padding:16px;background:#fafcfa;border-bottom:1px solid var(--grid);">
+    <div style="padding:16px;background:var(--surface-2);border-bottom:1px solid var(--grid);">
       <div id="userStatsView-${code}">
         <div class="stat-row-compact">
           <div class="stat-cell-sm"><div class="stat-label">🎂 גיל</div><div class="stat-value">${userData.age || '—'}</div></div>
@@ -1704,7 +1736,7 @@ async function showAdminUserPanel(code, label, userData){
     <h2><span>${label}</span></h2>
     <div class="tab-bar" style="padding:12px 16px 0;margin-bottom:0;" id="subTabBar-${code}">
       <button class="tab-btn subtab-btn" data-subtab="overview" style="--tabColor:var(--teal);">${icon("clipboard")} סקירה</button>
-      <button class="tab-btn subtab-btn" data-subtab="weight" style="--tabColor:var(--dark);">${icon("trending")} משקל</button>
+      <button class="tab-btn subtab-btn" data-subtab="weight" style="--tabColor:#1a3c34;">${icon("trending")} משקל</button>
       <button class="tab-btn subtab-btn" data-subtab="history" style="--tabColor:var(--accent);">${icon("filetext")} היסטוריה</button>
     </div>
 
@@ -3010,7 +3042,7 @@ function showToast(html, accentColor){
   toast.id = "appToast";
   toast.style.cssText = `
     position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-20px);
-    background:#fff; border-radius:var(--radius-md); box-shadow:0 6px 20px rgba(0,0,0,.18);
+    background:var(--surface); border-radius:var(--radius-md); box-shadow:0 6px 20px rgba(0,0,0,.28);
     border-right:5px solid ${accentColor || 'var(--brand)'}; padding:14px 18px; max-width:340px;
     z-index:9999; opacity:0; transition:opacity .3s ease, transform .3s ease; text-align:center;
   `;
